@@ -120,6 +120,22 @@ export class UIManager {
             this.updateTapToRollButton(player);
         });
 
+        // Show button when player gets an extra turn (rolled 6 or captured)
+        eventBus.on('EXTRA_TURN', ({ player }) => {
+            // Small delay to let the turn phase update
+            setTimeout(() => {
+                this.updateTapToRollButton(player);
+            }, 100);
+        });
+
+        // Re-check button after a token move completes (in case of extra roll)
+        eventBus.on('TOKEN_MOVED', () => {
+            setTimeout(() => {
+                const currentPlayer = this.gameState.getCurrentPlayer();
+                this.updateTapToRollButton(currentPlayer);
+            }, 500);
+        });
+
         // Local state for toggles (no global config.gameMode anymore)
 
         // Setup Grid Selection & Toggles
