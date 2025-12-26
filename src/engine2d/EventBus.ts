@@ -25,7 +25,7 @@ export interface GameEventMap {
     EXTRA_TURN: { player: number; reason: 'six' | 'capture' };
 
     // Game state events
-    GAME_STARTED: { playerCount: number };
+    GAME_STARTED: { playerCount: number, resumed?: boolean };
     GAME_WON: { player: number };
     GAME_RESET: {};
     GAME_RESUMED: { player: number };

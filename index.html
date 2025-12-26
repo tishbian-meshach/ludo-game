@@ -137,9 +137,15 @@
         <!-- Start Screen -->
         <div id="start-screen" class="screen active">
             <div class="logo-container">
-                <img src="/src/assets/logo.png" alt="Ludo" class="game-logo">
+                <img src="/assets/logo.png" alt="Ludo" class="game-logo">
             </div>
-            <button id="btn-play-initial" class="btn-primary">PLAY LUDO</button>
+            <div class="start-buttons">
+                <div id="start-loader" class="start-loader">
+                    <div class="spinner-ring"></div>
+                </div>
+                <button id="btn-resume-match" class="btn-primary btn-resume hidden btn-reveal">RESUME</button>
+                <button id="btn-play-initial" class="btn-primary btn-reveal">PLAY LUDO</button>
+            </div>
         </div>
 
         <!-- Setup Screen -->
@@ -276,7 +282,7 @@
         <div id="game-ui-overlay" class="screen hidden no-bg">
             <!-- Top Bar -->
             <div class="game-header">
-                <img src="/src/assets/logo.png" alt="Logo" class="mini-logo">
+                <img src="/assets/logo.png" alt="Logo" class="mini-logo">
                 <button id="btn-menu" class="icon-btn">☰</button>
             </div>
 
@@ -323,9 +329,9 @@
     <div id="game-over-modal" class="hidden">
         <div class="game-over-content">
             <div class="game-over-header">
-                <img src="/src/assets/trophy.png" alt="Trophy" class="header-trophy left-trophy">
+                <img src="/assets/trophy.png" alt="Trophy" class="header-trophy left-trophy">
                 <h2>GAME OVER</h2>
-                <img src="/src/assets/trophy.png" alt="Trophy" class="header-trophy">
+                <img src="/assets/trophy.png" alt="Trophy" class="header-trophy">
             </div>
             <div class="rankings">
                 <div class="rank rank-1">

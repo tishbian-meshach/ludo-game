@@ -245,6 +245,23 @@ export class TokenModel {
     }
 
     /**
+     * Get current state of all tokens
+     */
+    getState(): Token[] {
+        return this.getAllTokens();
+    }
+
+    /**
+     * Load state of all tokens
+     */
+    loadState(tokens: Token[]): void {
+        this.tokens.clear();
+        tokens.forEach(t => {
+            this.tokens.set(t.id, { ...t });
+        });
+    }
+
+    /**
      * Reset all tokens
      */
     reset(activePlayerIndices: number[]): void {

@@ -5,32 +5,26 @@
 
 import { GameConfig, GameState } from '../engine2d/GameState';
 import { eventBus } from '../engine2d/EventBus';
+import { SaveManager } from '../engine2d/SaveManager';
 import { PLAYER_ORDER } from '../styles/theme';
 import gsap from 'gsap';
 
 export class UIManager {
     private gameState: GameState;
     private onStartGame: (config: GameConfig) => void;
+    private lastGameConfig: GameConfig | null = null;
 
     // Screens
     private startScreen: HTMLElement;
     private setupScreen: HTMLElement;
     private gameUIOverlay: HTMLElement;
     private gameContainer: HTMLElement; // The canvas container
+    private resumeBtn: HTMLElement;
 
     // Components
     private avatarContainer: HTMLElement;
     private playerInputs: HTMLElement;
     private menuModal: HTMLElement;
-
-    // Config State
-    private lastGameConfig: GameConfig | null = null;
-    private config: GameConfig = {
-        playerCount: 2,
-        activePlayerIndices: [0, 2], // Default R+Y
-        playerNames: ['Player 1', 'Player 2', 'Player 3', 'Player 4'],
-        botStatus: [false, false, false, false]
-    };
 
     constructor(gameState: GameState, onStartGame: (config: GameConfig) => void) {
         this.gameState = gameState;
@@ -42,14 +36,36 @@ export class UIManager {
         this.gameUIOverlay = document.getElementById('game-ui-overlay')!;
         this.gameContainer = document.getElementById('game-container')!;
         this.avatarContainer = document.getElementById('avatar-container')!;
+        this.resumeBtn = document.getElementById('btn-resume-match')!;
 
         this.playerInputs = document.querySelector('.player-config')!;
         this.menuModal = document.getElementById('in-game-menu')!;
 
         this.setupEventListeners();
+        this.checkExistingSave();
+    }
 
-        // Initial state logic?
-        // Let game start in menu mode
+    /**
+     * Check if there's a game to resume
+     */
+    private checkExistingSave(): void {
+        const buttonsContainer = this.startScreen.querySelector('.start-buttons');
+        if (!buttonsContainer) return;
+
+        // Reset state for loading
+        buttonsContainer.classList.remove('buttons-ready');
+
+        // Simulate a "Premium" cache check delay
+        setTimeout(() => {
+            if (SaveManager.hasSave()) {
+                this.resumeBtn.classList.remove('hidden');
+            } else {
+                this.resumeBtn.classList.add('hidden');
+            }
+
+            // Reveal buttons smoothly
+            buttonsContainer.classList.add('buttons-ready');
+        }, 800);
     }
 
     private setupEventListeners(): void {
@@ -61,6 +77,21 @@ export class UIManager {
         // Setup Back -> Start
         document.getElementById('btn-back')?.addEventListener('click', () => {
             this.showScreen(this.startScreen);
+        });
+
+        // Resume Match Button
+        this.resumeBtn?.addEventListener('click', () => {
+            const saveData = SaveManager.load();
+            if (saveData) {
+                this.lastGameConfig = saveData.config;
+                this.gameState.resumeGame(saveData);
+                this.showGameUI();
+
+                // Hide menu and setup
+                this.startScreen.classList.add('hidden');
+                this.startScreen.classList.remove('active');
+                this.setupScreen.classList.add('hidden');
+            }
         });
 
         // Menu Button
@@ -105,41 +136,51 @@ export class UIManager {
             });
         }
 
-        // Listen for turn changes to show/hide tap-to-roll button
+        // --- Game Events ---
+
         eventBus.on('TURN_CHANGED', ({ player }) => {
+            this.updateTurnUI(player);
             this.updateTapToRollButton(player);
+
+            // Auto-save on turn change
+            if (this.gameState.getPhase() === 'playing') {
+                SaveManager.save(this.gameState.serialize());
+                this.checkExistingSave();
+            }
         });
 
-        // Hide button after dice is rolled
         eventBus.on('DICE_ROLLED', () => {
             const btn = document.getElementById('tap-to-roll');
             if (btn) btn.classList.add('hidden');
         });
 
-        // Show button when game resumes if it's a human player's turn
         eventBus.on('GAME_RESUMED', ({ player }) => {
             this.updateTapToRollButton(player);
         });
 
-        // Show button when player gets an extra turn (rolled 6 or captured)
         eventBus.on('EXTRA_TURN', ({ player }) => {
-            // Small delay to let the turn phase update
             setTimeout(() => {
                 this.updateTapToRollButton(player);
             }, 100);
         });
 
-        // Re-check button after a token move completes (in case of extra roll)
         eventBus.on('TOKEN_MOVED', () => {
-            setTimeout(() => {
-                const currentPlayer = this.gameState.getCurrentPlayer();
-                this.updateTapToRollButton(currentPlayer);
-            }, 500);
+            this.updateTapToRollButton();
+
+            // Auto-save after movement
+            if (this.gameState.getPhase() === 'playing') {
+                SaveManager.save(this.gameState.serialize());
+            }
         });
 
-        // Listen for player wins to show game over modal
         eventBus.on('GAME_WON', ({ player }) => {
             this.checkGameOver();
+
+            // Clear save if game ended
+            if (this.gameState.getWinners().length >= this.gameState.getPlayerCount() - 1) {
+                SaveManager.clear();
+                this.checkExistingSave();
+            }
         });
 
         // Game Over Modal Buttons
@@ -159,32 +200,23 @@ export class UIManager {
             this.showScreen(this.startScreen);
         });
 
-        // Local state for toggles (no global config.gameMode anymore)
+        // --- Setup Grid Selection & Toggles ---
 
-        // Setup Grid Selection & Toggles
         const gridCells = document.querySelectorAll('.player-cell');
-
-        // Initial Selection: Red (0) and Yellow (2)
-        // Note: HTML already has 'selected' class on 0 and 2
 
         gridCells.forEach(cell => {
             const input = cell.querySelector('input') as HTMLInputElement;
             const editIcon = cell.querySelector('.edit-icon') as HTMLElement;
-            const botBtn = cell.querySelector('.bot-toggle-btn') as HTMLElement;
 
             cell.addEventListener('click', (e) => {
                 const target = e.currentTarget as HTMLElement;
 
-                // Toggle selection
                 if (target.classList.contains('selected')) {
                     const selectedCells = Array.from(document.querySelectorAll('.player-cell.selected'));
                     const selectedCount = selectedCells.length;
-
-                    // Validation: Must keep at least 1 human
                     const humanCount = selectedCells.filter(c => c.querySelector('.type-btn.human.active')).length;
-                    const isTargetHuman = target.querySelector('.type-btn.human.active');
+                    const isTargetHuman = !!target.querySelector('.type-btn.human.active');
 
-                    // Validation: Must keep at least 2 players
                     if (selectedCount > 2) {
                         if (isTargetHuman && humanCount <= 1) {
                             this.showToast("At least one human player is required!", 'error');
@@ -196,7 +228,6 @@ export class UIManager {
                     target.classList.add('selected');
                 }
 
-                // Update input state based on selection (and bot state)
                 if (input) {
                     const botBtnSegmented = cell.querySelector('.type-btn.bot');
                     const isBot = !!(botBtnSegmented && botBtnSegmented.classList.contains('active'));
@@ -204,18 +235,14 @@ export class UIManager {
                 }
             });
 
-            // Input: stop propagation (don't toggle)
             if (input) {
                 input.addEventListener('click', (e) => e.stopPropagation());
             }
 
-            // Edit Icon
             if (editIcon && input) {
                 editIcon.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (!input.disabled) {
-                        input.focus();
-                    }
+                    if (!input.disabled) input.focus();
                 });
             }
 
@@ -244,49 +271,38 @@ export class UIManager {
                 }
             };
 
-            if (humanBtn) {
-                humanBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    setBotState(false);
-                });
-            }
+            humanBtn?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                setBotState(false);
+            });
 
-            if (botBtnSegmented) {
-                botBtnSegmented.addEventListener('click', (e) => {
-                    e.stopPropagation();
+            botBtnSegmented?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (cell.classList.contains('selected')) {
+                    const selectedCells = Array.from(document.querySelectorAll('.player-cell.selected'));
+                    const humanCount = selectedCells.filter(c => c.querySelector('.type-btn.human.active')).length;
 
-                    // Validation: Prevent removing last human
-                    if (cell.classList.contains('selected')) {
-                        const selectedCells = Array.from(document.querySelectorAll('.player-cell.selected'));
-                        const humanCount = selectedCells.filter(c => c.querySelector('.type-btn.human.active')).length;
-
-                        if (humanBtn?.classList.contains('active') && humanCount <= 1) {
-                            this.showToast("At least one human player is required!", 'error');
-                            return;
-                        }
+                    if (humanBtn?.classList.contains('active') && humanCount <= 1) {
+                        this.showToast("At least one human player is required!", 'error');
+                        return;
                     }
-
-                    setBotState(true);
-                });
-            }
+                }
+                setBotState(true);
+            });
         });
 
         // Start Game
         document.getElementById('btn-start-game')?.addEventListener('click', () => {
-            // Collect Active Players
             const activeIndices: number[] = [];
             const playerNames: string[] = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
             const botStatus: boolean[] = [false, false, false, false];
 
-            // We iterate 0-3 to maintain order
             for (let i = 0; i < 4; i++) {
                 const cell = document.querySelector(`.player-cell[data-player="${i}"]`);
                 if (cell && cell.classList.contains('selected')) {
                     activeIndices.push(i);
-
                     const input = cell.querySelector('input') as HTMLInputElement;
                     playerNames[i] = input.value || `Player ${i + 1}`;
-
                     const botBtn = cell.querySelector('.type-btn.bot');
                     if (botBtn && botBtn.classList.contains('active')) {
                         botStatus[i] = true;
@@ -301,51 +317,50 @@ export class UIManager {
                 botStatus: botStatus
             };
 
-
-
-            this.lastGameConfig = config; // Save for restart
+            this.lastGameConfig = config;
             this.onStartGame(config);
-            this.showScreen(this.gameUIOverlay);
-            this.gameContainer.style.filter = 'none'; // Unblur
-            this.gameContainer.style.pointerEvents = 'auto'; // Enable interaction
-
-            // Update Overlay
-            this.createAvatars();
+            this.showGameUI();
         });
+    }
 
-        // Game Events
-        eventBus.on('TURN_CHANGED', ({ player }) => {
-            this.updateActiveAvatar(player);
-        });
+    /**
+     * Show game UI and enable interaction
+     */
+    private showGameUI(): void {
+        this.showScreen(this.gameUIOverlay);
+        this.gameContainer.style.filter = 'none';
+        this.gameContainer.style.pointerEvents = 'auto';
+
+        // Update Overlay
+        this.createAvatars();
     }
 
     /**
      * Switch visible screen
      */
     private showScreen(screen: HTMLElement): void {
-        // Hide all screens
         [this.startScreen, this.setupScreen, this.gameUIOverlay].forEach(s => {
             s.classList.add('hidden');
             s.classList.remove('active');
         });
 
-        // Show target
         screen.classList.remove('hidden');
         screen.classList.add('active');
+
+        // Refresh resume button status if returning to start screen
+        if (screen === this.startScreen) {
+            this.checkExistingSave();
+        }
     }
-
-
 
     /**
      * Create Avatar Elements in Overlay
      */
     private createAvatars(): void {
         this.avatarContainer.innerHTML = '';
-
         const names = this.gameState.getPlayerNames();
         const activePlayerIndices = this.gameState.getActivePlayerIndices();
 
-        // Color hex values indexed by player index
         const colorHexByIndex: Record<number, string> = {
             0: '#FF4757', // Red
             1: '#2ECC71', // Green
@@ -354,34 +369,27 @@ export class UIManager {
         };
 
         activePlayerIndices.forEach((playerIndex, nameIndex) => {
-            const colorName = PLAYER_ORDER[playerIndex];
-            const name = names[nameIndex];
+            const name = names[playerIndex] || `Player ${playerIndex + 1}`;
             const colorHex = colorHexByIndex[playerIndex];
 
             const avatar = document.createElement('div');
-            avatar.className = `player-avatar p-avatar-${playerIndex}`; // Use player index for positioning
-            avatar.id = `avatar-${playerIndex}`; // Use player index for ID
-
-            // Set player color as CSS variable for active state
+            avatar.className = `player-avatar p-avatar-${playerIndex}`;
+            avatar.id = `avatar-${playerIndex}`;
             avatar.style.setProperty('--player-color', colorHex);
 
-            // Determine Icon
             const isBot = this.gameState.isBot(playerIndex);
 
-            // Bot SVG (same as in setup)
             const botSvg = `
-            <svg class="avatar-icon" viewBox="0 0 100 105" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M90,36.667h-4.167L79.98,47.312l-0.82-7.373C78.555,34.473,73.558,30,68.057,30H53.333v-7.591 c1.986-1.156,3.334-3.281,3.334-5.743C56.667,12.985,53.682,10,50,10s-6.666,2.985-6.666,6.667c0,2.461,1.349,4.586,3.332,5.743V30 H31.941c-5.5,0-10.496,4.473-11.104,9.938l-0.818,7.369l-5.854-10.641H10l3.334,26.666h4.904l-1.49,13.415 C15.938,84.036,21.274,90,28.608,90H71.39c7.334,0,12.673-5.964,11.862-13.252l-1.491-13.415h4.906L90,36.667z M60,80H40v-6.667h20 V80z M70,60c0,2.751-2.249,5-5,5H35c-2.75,0-5-2.249-5-5V48.333c0-2.75,2.25-5,5-5h30c2.751,0,5,2.25,5,5V60z" />
-                <path d="M38.334,52.5c0-1.843,1.492-3.333,3.332-3.333c1.844,0,3.334,1.49,3.334,3.333v3.333c0,1.843-1.49,3.334-3.334,3.334 c-1.84,0-3.332-1.491-3.332-3.334V52.5z" />
-                <path d="M55,52.5c0-1.843,1.491-3.333,3.333-3.333c1.843,0,3.334,1.49,3.334,3.333v3.333c0,1.843-1.491,3.334-3.334,3.334 c-1.842,0-3.333-1.491-3.333-3.334V52.5z" />
-            </svg>`;
+                <svg class="avatar-icon" viewBox="0 0 100 105" fill="currentColor">
+                    <path d="M90,36.667h-4.167L79.98,47.312l-0.82-7.373C78.555,34.473,73.558,30,68.057,30H53.333v-7.591 c1.986-1.156,3.334-3.281,3.334-5.743C56.667,12.985,53.682,10,50,10s-6.666,2.985-6.666,6.667c0,2.461,1.349,4.586,3.332,5.743V30 H31.941c-5.5,0-10.496,4.473-11.104,9.938l-0.818,7.369l-5.854-10.641H10l3.334,26.666h4.904l-1.49,13.415 C15.938,84.036,21.274,90,28.608,90H71.39c7.334,0,12.673-5.964,11.862-13.252l-1.491-13.415h4.906L90,36.667z M60,80H40v-6.667h20 V80z M70,60c0,2.751-2.249,5-5,5H35c-2.75,0-5-2.249-5-5V48.333c0-2.75,2.25-5,5-5h30c2.751,0,5,2.25,5,5V60z" />
+                    <path d="M38.334,52.5c0-1.843,1.492-3.333,3.332-3.333c1.844,0,3.334,1.49,3.334,3.333v3.333c0,1.843-1.49,3.334-3.334,3.334 c-1.84,0-3.332-1.491-3.332-3.334V52.5z" />
+                    <path d="M55,52.5c0-1.843,1.491-3.333,3.333-3.333c1.843,0,3.334,1.49,3.334,3.333v3.333c0,1.843-1.491,3.334-3.334,3.334 c-1.842,0-3.333-1.491-3.333-3.334V52.5z" />
+                </svg>`;
 
-            // Human SVG
             const humanSvg = `
-            <svg class="avatar-icon" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M12 14c-4 0-8 2-8 4v2h16v-2c0-2-4-4-8-4z"/>
-            </svg>`;
+                <svg class="avatar-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="8" r="4"/><path d="M12 14c-4 0-8 2-8 4v2h16v-2c0-2-4-4-8-4z"/>
+                </svg>`;
 
             avatar.innerHTML = `
                 <div class="avatar-circle" style="background: ${colorHex}">
@@ -390,20 +398,18 @@ export class UIManager {
                 <div class="player-info">
                     <span class="player-name">${name}</span>
                     <span class="player-status">Waiting...</span>
-                </div>
-            `;
+                </div>`;
 
             this.avatarContainer.appendChild(avatar);
         });
 
-        this.updateActiveAvatar(this.gameState.getCurrentPlayer());
+        this.updateTurnUI(this.gameState.getCurrentPlayer());
     }
 
     /**
      * Highlight active player
      */
-    private updateActiveAvatar(playerIndex: number): void {
-        // Remove active class from all
+    private updateTurnUI(playerIndex: number): void {
         const avatars = this.avatarContainer.querySelectorAll('.player-avatar');
         avatars.forEach(a => {
             a.classList.remove('active');
@@ -411,7 +417,6 @@ export class UIManager {
             if (status) status.textContent = 'Waiting...';
         });
 
-        // Add to current
         const current = document.getElementById(`avatar-${playerIndex}`);
         if (current) {
             current.classList.add('active');
@@ -429,13 +434,10 @@ export class UIManager {
 
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-
         const icon = type === 'error' ? '⚠️' : '✅';
         toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
 
         container.appendChild(toast);
-
-        // Auto remove
         setTimeout(() => {
             toast.style.animation = 'toast-out 0.3s ease-in forwards';
             setTimeout(() => toast.remove(), 300);
@@ -443,51 +445,29 @@ export class UIManager {
     }
 
     /**
-     * Update the tap-to-roll button visibility based on current player
+     * Update the tap-to-roll button visibility
      */
-    private updateTapToRollButton(playerIndex: number): void {
+    private updateTapToRollButton(playerIndex?: number): void {
+        const targetPlayer = playerIndex !== undefined ? playerIndex : this.gameState.getCurrentPlayer();
         const btn = document.getElementById('tap-to-roll');
         if (!btn) return;
 
-        // Only show for human players when they can roll
-        const isHuman = !this.gameState.isBot(playerIndex);
+        const isHuman = !this.gameState.isBot(targetPlayer);
         const canRoll = this.gameState.canRoll();
         const turnPhase = this.gameState.getTurnPhase();
 
         if (isHuman && canRoll && turnPhase === 'waiting-for-roll') {
             btn.classList.remove('hidden');
+            const colorName = PLAYER_ORDER[targetPlayer];
+            const colorHex = ({ red: '#FF0055', green: '#00FF99', yellow: '#FFFF00', blue: '#00CCFF' } as any)[colorName] || '#00f7ff';
+            btn.style.setProperty('--player-color', colorHex);
 
-            // Set player color
-            const colorName = PLAYER_ORDER[playerIndex];
-            const colorHex = colorName ?
-                ({ red: '#FF0055', green: '#00FF99', yellow: '#FFFF00', blue: '#00CCFF' })[colorName]
-                : '#00f7ff';
-            btn.style.setProperty('--player-color', colorHex || '#00f7ff');
-
-            // Position below the player's avatar
-            // Avatar positions: 0=top-left, 1=top-right, 2=bottom-right, 3=bottom-left
-            btn.style.removeProperty('top');
-            btn.style.removeProperty('bottom');
-            btn.style.removeProperty('left');
-            btn.style.removeProperty('right');
-
-            switch (playerIndex) {
-                case 0: // Top-left
-                    btn.style.top = 'calc(12% + 32px + 70px)';
-                    btn.style.left = '5%';
-                    break;
-                case 1: // Top-right
-                    btn.style.top = 'calc(12% + 32px + 70px)';
-                    btn.style.right = '5%';
-                    break;
-                case 2: // Bottom-right
-                    btn.style.bottom = 'calc(8% + 70px)';
-                    btn.style.right = '5%';
-                    break;
-                case 3: // Bottom-left
-                    btn.style.bottom = 'calc(8% + 70px)';
-                    btn.style.left = '5%';
-                    break;
+            btn.style.top = btn.style.bottom = btn.style.left = btn.style.right = '';
+            switch (targetPlayer) {
+                case 0: btn.style.top = 'calc(12% + 102px)'; btn.style.left = '5%'; break;
+                case 1: btn.style.top = 'calc(12% + 102px)'; btn.style.right = '5%'; break;
+                case 2: btn.style.bottom = 'calc(8% + 70px)'; btn.style.right = '5%'; break;
+                case 3: btn.style.bottom = 'calc(8% + 70px)'; btn.style.left = '5%'; break;
             }
         } else {
             btn.classList.add('hidden');
@@ -495,23 +475,16 @@ export class UIManager {
     }
 
     /**
-     * Check if game should end (N-1 players finished) and show game over modal
+     * Check if game should end and show modal
      */
     private checkGameOver(): void {
         const winners = this.gameState.getWinners();
         const playerCount = this.gameState.getPlayerCount();
 
-        // End game when N-1 players have finished
         if (winners.length >= playerCount - 1 && playerCount > 1) {
-            // Find the remaining players (who didn't finish)
             const activePlayers = this.lastGameConfig?.activePlayerIndices || [0, 1, 2, 3];
             const remainingPlayers = activePlayers.filter(p => !winners.includes(p));
-
-            // Build full rankings
-            const rankings = [...winners, ...remainingPlayers];
-
-            // Update modal with rankings
-            this.showGameOverModal(rankings);
+            this.showGameOverModal([...winners, ...remainingPlayers]);
         }
     }
 
@@ -523,9 +496,7 @@ export class UIManager {
         if (!modal) return;
 
         const playerNames = this.lastGameConfig?.playerNames || ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
-        const colorNames: Record<number, string> = { 0: 'Red', 1: 'Green', 2: 'Yellow', 3: 'Blue' };
 
-        // Update rank names in modal and hide unused ranks
         for (let i = 0; i < 4; i++) {
             const rankRow = document.querySelector(`.rank-${i + 1}`) as HTMLElement;
             const nameEl = document.getElementById(`rank-${i + 1}-name`);
@@ -534,121 +505,122 @@ export class UIManager {
 
             if (rankings[i] !== undefined) {
                 if (rankRow) rankRow.style.display = 'flex';
-
-                // Update Medal Image
                 if (medalImg) {
-                    if (i === 0) medalImg.src = '/src/assets/1st-medal.png';
-                    else if (i === 1) medalImg.src = '/src/assets/2nd-medal.png';
-                    else if (i === 2) medalImg.src = '/src/assets/3rd-medal.png';
-                    else medalImg.src = '/src/assets/looser-medal.png';
+                    const assets = ['1st-medal.png', '2nd-medal.png', '3rd-medal.png', 'looser-medal.png'];
+                    medalImg.src = `/assets/${assets[Math.min(i, 3)]}`;
                 }
-
-                // Update Number Overlay (for non-podium finishers)
                 if (numberOverlay) {
-                    if (i >= 3) {
-                        numberOverlay.style.display = 'block';
-                        numberOverlay.textContent = (i + 1).toString();
-                    } else {
-                        numberOverlay.style.display = 'none';
-                    }
+                    numberOverlay.style.display = i >= 3 ? 'block' : 'none';
+                    numberOverlay.textContent = (i + 1).toString();
                 }
-
                 if (nameEl) {
-                    const playerIndex = rankings[i];
-                    const name = playerNames[playerIndex] || colorNames[playerIndex] || `Player ${playerIndex + 1}`;
-                    nameEl.textContent = name;
+                    const pIndex = rankings[i];
+                    nameEl.textContent = playerNames[pIndex] || `Player ${pIndex + 1}`;
                 }
-            } else {
-                if (rankRow) rankRow.style.display = 'none';
+            } else if (rankRow) {
+                rankRow.style.display = 'none';
             }
         }
 
-        // Show modal and pause game
         modal.classList.remove('hidden');
         this.gameState.pause();
-
-        // Hide tap-to-roll button
         const tapBtn = document.getElementById('tap-to-roll');
         if (tapBtn) tapBtn.classList.add('hidden');
-
-        // Launch confetti celebration!
         this.launchConfetti();
     }
 
     /**
-     * Launch a confetti celebration animation using GSAP
+     * Launch a confetti celebration
      */
     private launchConfetti(): void {
         const colors = ['#FF0055', '#00FF99', '#FFFF00', '#00CCFF', '#FF6600', '#FF00FF', '#FFD700'];
         const container = document.getElementById('game-over-modal');
         if (!container) return;
 
-        // Create confetti pieces
-        const confettiCount = 60;
-        const confettiElements: HTMLElement[] = [];
-
-        for (let i = 0; i < confettiCount; i++) {
+        for (let i = 0; i < 60; i++) {
             const confetti = document.createElement('div');
-            confetti.className = 'confetti-piece';
-            confetti.style.cssText = `
-                position: absolute;
-                width: ${Math.random() * 10 + 6}px;
-                height: ${Math.random() * 10 + 6}px;
-                background: ${colors[Math.floor(Math.random() * colors.length)]};
-                left: ${Math.random() * 100}%;
-                top: -20px;
-                border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
-                pointer-events: none;
-                z-index: 10001;
-            `;
+            confetti.style.cssText = `position:absolute; width:${Math.random() * 10 + 6}px; height:${Math.random() * 10 + 6}px; background:${colors[Math.floor(Math.random() * colors.length)]}; left:${Math.random() * 100}%; top:-20px; border-radius:${Math.random() > 0.5 ? '50%' : '2px'}; pointer-events:none; z-index:10001;`;
             container.appendChild(confetti);
-            confettiElements.push(confetti);
 
-            // Animate each confetti piece
             gsap.to(confetti, {
-                y: window.innerHeight + 50,
-                x: (Math.random() - 0.5) * 200,
-                rotation: Math.random() * 720 - 360,
-                duration: Math.random() * 2 + 2,
-                delay: Math.random() * 0.5,
-                ease: 'power1.out',
-                onComplete: () => {
-                    confetti.remove();
-                }
+                y: window.innerHeight + 50, x: (Math.random() - 0.5) * 200, rotation: Math.random() * 720 - 360,
+                duration: Math.random() * 2 + 2, delay: Math.random() * 0.5, ease: 'power1.out',
+                onComplete: () => confetti.remove()
             });
         }
 
-        // Add sparkle burst effect at center
         for (let i = 0; i < 20; i++) {
             const spark = document.createElement('div');
-            spark.className = 'confetti-spark';
-            spark.style.cssText = `
-                position: absolute;
-                width: 4px;
-                height: 4px;
-                background: #FFD700;
-                left: 50%;
-                top: 50%;
-                border-radius: 50%;
-                pointer-events: none;
-                z-index: 10002;
-                box-shadow: 0 0 6px #FFD700;
-            `;
+            spark.style.cssText = `position:absolute; width:4px; height:4px; background:#FFD700; left:50%; top:50%; border-radius:50%; pointer-events:none; z-index:10002; box-shadow:0 0 6px #FFD700;`;
             container.appendChild(spark);
-
             const angle = (i / 20) * Math.PI * 2;
-            const distance = 80 + Math.random() * 60;
-
+            const dist = 80 + Math.random() * 60;
             gsap.to(spark, {
-                x: Math.cos(angle) * distance,
-                y: Math.sin(angle) * distance,
-                opacity: 0,
-                scale: 0,
-                duration: 0.8,
-                delay: 0.1,
-                ease: 'power2.out',
-                onComplete: () => spark.remove()
+                x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, opacity: 0, scale: 0,
+                duration: 0.8, delay: 0.1, ease: 'power2.out', onComplete: () => spark.remove()
             });
         }
+
+        // Looping Fireworks at the top
+        this.launchFireworks(container, colors);
+    }
+
+    /**
+     * Launch looping fireworks animation at the top of the modal
+     */
+    private launchFireworks(container: HTMLElement, colors: string[]): void {
+        const launchSingleFirework = () => {
+            const xPos = 10 + Math.random() * 80; // 10-90% of width
+            const yPos = 5 + Math.random() * 15;  // 5-20% from top
+
+            const burstColor = colors[Math.floor(Math.random() * colors.length)];
+            const sparkCount = 12 + Math.floor(Math.random() * 10);
+
+            for (let i = 0; i < sparkCount; i++) {
+                const spark = document.createElement('div');
+                spark.className = 'firework-spark';
+                spark.style.cssText = `
+                    position: absolute;
+                    width: 5px;
+                    height: 5px;
+                    background: ${burstColor};
+                    left: ${xPos}%;
+                    top: ${yPos}%;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    z-index: 10003;
+                    box-shadow: 0 0 8px ${burstColor}, 0 0 12px ${burstColor};
+                `;
+                container.appendChild(spark);
+
+                const angle = (i / sparkCount) * Math.PI * 2;
+                const dist = 40 + Math.random() * 50;
+
+                gsap.to(spark, {
+                    x: Math.cos(angle) * dist,
+                    y: Math.sin(angle) * dist,
+                    opacity: 0,
+                    scale: 0.5,
+                    duration: 0.8 + Math.random() * 0.4,
+                    ease: 'power2.out',
+                    onComplete: () => spark.remove()
+                });
+            }
+        };
+
+        // Initial burst
+        launchSingleFirework();
+        setTimeout(() => launchSingleFirework(), 200);
+
+        // Loop: launch new fireworks every 1.5 seconds
+        const intervalId = setInterval(() => {
+            // Stop if modal is hidden
+            if (container.classList.contains('hidden')) {
+                clearInterval(intervalId);
+                return;
+            }
+            launchSingleFirework();
+            setTimeout(() => launchSingleFirework(), 300 + Math.random() * 300);
+        }, 1500);
     }
 }

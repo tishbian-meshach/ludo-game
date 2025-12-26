@@ -312,6 +312,33 @@ export class TurnManager {
     }
 
     /**
+     * Set current turn state (for resuming game)
+     */
+    setState(state: TurnState & { currentPlayerSlot: number }): void {
+        this.currentPlayer = state.currentPlayer;
+        this.currentPlayerSlot = state.currentPlayerSlot;
+        this.diceValue = state.diceValue;
+        this.consecutiveSixes = state.consecutiveSixes;
+        this.canRollAgain = state.canRollAgain;
+
+        // Normalize transient phases to a stable state
+        // If the game was saved during a transitional phase, reset to waiting-for-roll
+        const transientPhases: TurnPhase[] = ['rolling', 'moving', 'animating', 'turn-ending'];
+        if (transientPhases.includes(state.phase)) {
+            this.phase = 'waiting-for-roll';
+        } else {
+            this.phase = state.phase;
+        }
+
+        // Always enable dice roll for waiting-for-roll phase
+        if (this.phase === 'waiting-for-roll') {
+            this.dice.enableRoll();
+        } else {
+            this.dice.disableRoll();
+        }
+    }
+
+    /**
      * Reset turn manager
      */
     reset(): void {

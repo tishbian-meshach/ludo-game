@@ -69,6 +69,10 @@
     z-index: -1;
 }
 
+.hidden {
+    display: none !important;
+}
+
 .screen.no-bg {
     background: transparent !important;
     pointer-events: none;
@@ -219,6 +223,72 @@
 /* ─────────────────────────────────────────────────────────────────────
    SETUP SCREEN
    ───────────────────────────────────────────────────────────────────── */
+.start-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+    min-height: 60px;
+    /* Ensure space for loader/buttons */
+}
+
+.btn-resume {
+    background: linear-gradient(135deg, #00B4D8 0%, #0077B6 100%);
+    box-shadow: 0 0 20px rgba(0, 180, 216, 0.3);
+    border-color: rgba(0, 180, 216, 0.5);
+}
+
+.btn-resume:hover {
+    box-shadow: 0 0 30px rgba(0, 180, 216, 0.5);
+    background: linear-gradient(135deg, #00D1FF 0%, #00B4D8 100%);
+}
+
+/* Start Screen Loader */
+.start-loader {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease;
+    z-index: 5;
+}
+
+.spinner-ring {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(0, 247, 255, 0.1);
+    border-top: 3px solid var(--neon-cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    box-shadow: 0 0 10px rgba(0, 247, 255, 0.2);
+}
+
+.btn-reveal {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+}
+
+.buttons-ready .btn-reveal {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.buttons-ready .start-loader {
+    opacity: 0;
+    display: none;
+}
+
 #setup-screen {
     background: rgba(10, 10, 18, 0.95);
     backdrop-filter: blur(20px);

@@ -40,10 +40,10 @@ export class HUD {
      */
     private loadBadges(): void {
         const badgeFiles: Record<number, string> = {
-            1: '/src/assets/1st-place.png',
-            2: '/src/assets/2nd-place.png',
-            3: '/src/assets/3rd-place.png',
-            4: '/src/assets/looser.png'
+            1: '/assets/1st-place.png',
+            2: '/assets/2nd-place.png',
+            3: '/assets/3rd-place.png',
+            4: '/assets/looser.png'
         };
 
         let loadedCount = 0;

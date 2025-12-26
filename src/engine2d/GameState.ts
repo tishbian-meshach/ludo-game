@@ -101,6 +101,66 @@ export class GameState {
     }
 
     /**
+     * Serialize current game state for saving
+     */
+    serialize(): any {
+        return {
+            config: {
+                playerCount: this.playerCount,
+                activePlayerIndices: this.playerBoardMapping,
+                playerNames: this.playerNames,
+                botStatus: this.botPlayers
+            },
+            tokens: this.tokenModel.getState(),
+            turn: {
+                ...this.turnManager.getState(),
+                // @ts-ignore - reaching into private for serialization
+                currentPlayerSlot: this.turnManager.currentPlayerSlot
+            },
+            winners: [...this.winners],
+            timestamp: Date.now()
+        };
+    }
+
+    /**
+     * Resume game from saved state
+     */
+    resumeGame(data: any): void {
+        const config = data.config;
+        this.playerCount = config.playerCount;
+        this.playerNames = config.playerNames;
+        this.playerBoardMapping = config.activePlayerIndices;
+        this.botPlayers = [...config.botStatus];
+        this.winners = [...(data.winners || [])];
+        this.phase = 'playing';
+
+        // Restore token states
+        this.tokenModel.reset(this.playerBoardMapping);
+        this.tokenModel.loadState(data.tokens);
+
+        // Reinitialize components
+        this.diceLogic.reset();
+        this.turnManager = new TurnManager(
+            this.playerBoardMapping,
+            this.diceLogic,
+            this.rules,
+            this.tokenModel
+        );
+
+        // Restore turn state
+        this.turnManager.setState(data.turn);
+
+        // Emit events
+        eventBus.emit('GAME_STARTED', { playerCount: this.playerCount, resumed: true });
+        eventBus.emit('TURN_CHANGED', {
+            player: this.turnManager.getCurrentPlayer(),
+            previousPlayer: -1
+        });
+        // Critical: Emit GAME_RESUMED so UIManager updates the Tap to Roll button
+        eventBus.emit('GAME_RESUMED', { player: this.turnManager.getCurrentPlayer() });
+    }
+
+    /**
      * Roll dice
      */
     async rollDice(): Promise<void> {
