@@ -1,0 +1,48 @@
+src/engine2d/BoardModel.ts(6,31): error TS6133: 'PlayerColor' is declared but its value is never read.
+src/engine2d/BoardModel.ts(51,31): error TS6133: 'color' is declared but its value is never read.
+src/engine2d/BoardModel.ts(73,15): error TS6133: 'cellsPerSide' is declared but its value is never read.
+src/engine2d/BoardModel.ts(74,15): error TS6133: 'cornerCells' is declared but its value is never read.
+src/engine2d/BoardModel.ts(192,45): error TS2345: Argument of type 'number' is not assignable to parameter of type '0 | 8 | 13 | 26 | 39 | 21 | 34 | 47'.
+src/engine2d/BoardModel.ts(199,61): error TS2345: Argument of type 'number' is not assignable to parameter of type '0 | 13 | 26 | 39'.
+src/engine2d/DiceLogic.ts(22,13): error TS6133: 'currentPlayer' is declared but its value is never read.
+src/engine2d/Rules.ts(7,17): error TS6133: 'PLAYER_ORDER' is declared but its value is never read.
+src/engine2d/Rules.ts(144,42): error TS2345: Argument of type 'number' is not assignable to parameter of type '0 | 8 | 13 | 26 | 39 | 21 | 34 | 47'.
+src/engine2d/Rules.ts(166,45): error TS2345: Argument of type 'number' is not assignable to parameter of type '0 | 8 | 13 | 26 | 39 | 21 | 34 | 47'.
+src/engine2d/Rules.ts(199,16): error TS6133: 'playerIndex' is declared but its value is never read.
+src/engine2d/TokenModel.ts(118,19): error TS6133: 'homeEntry' is declared but its value is never read.
+src/engine2d/TokenModel.ts(119,19): error TS6133: 'stepsToHome' is declared but its value is never read.
+src/engine2d/TokenModel.ts(179,15): error TS6133: 'homeEntry' is declared but its value is never read.
+src/engine2d/TokenModel.ts(180,15): error TS6133: 'startPos' is declared but its value is never read.
+src/engine2d/TurnManager.ts(161,15): error TS6133: 'fromPos' is declared but its value is never read.
+src/main.ts(31,13): error TS6133: 'container' is declared but its value is never read.
+src/main.ts(46,13): error TS6133: 'cameraController' is declared but its value is never read.
+src/renderer2d/BoardCanvas.ts(168,9): error TS6133: 'playerIndex' is declared but its value is never read.
+src/renderer2d/BoardCanvas.ts(230,81): error TS2345: Argument of type 'number' is not assignable to parameter of type '0 | 13 | 26 | 39'.
+src/renderer2d/BoardCanvas.ts(232,21): error TS2322: Type '"#FADBD8" | "#D5F5E3" | "#FCF3CF" | "#D6EAF8"' is not assignable to type '"#FFFFFF"'.
+  Type '"#FADBD8"' is not assignable to type '"#FFFFFF"'.
+src/renderer2d/InputHandler.ts(10,1): error TS6133: 'SIZES' is declared but its value is never read.
+src/renderer2d/TokenRenderer2D.ts(8,10): error TS6133: 'COLORS' is declared but its value is never read.
+src/renderer2d/TokenRenderer2D.ts(20,13): error TS6133: 'canvas' is declared but its value is never read.
+src/renderer2d/TokenRenderer2D.ts(25,13): error TS6133: 'scale' is declared but its value is never read.
+src/renderer3d/CameraController.ts(149,21): error TS6133: 'winningPlayer' is declared but its value is never read.
+src/renderer3d/Dice3D.ts(182,15): error TS6133: 'colors' is declared but its value is never read.
+src/renderer3d/Effects.ts(7,1): error TS6133: 'gsap' is declared but its value is never read.
+src/renderer3d/Effects.ts(10,10): error TS6133: 'COLORS' is declared but its value is never read.
+src/renderer3d/Effects.ts(10,35): error TS6133: 'PLAYER_ORDER' is declared but its value is never read.
+src/renderer3d/Effects.ts(140,15): error TS6133: 'colors' is declared but its value is never read.
+src/renderer3d/Effects.ts(156,46): error TS6133: 'waveIndex' is declared but its value is never read.
+src/renderer3d/Effects.ts(215,15): error TS6133: 'size' is declared but its value is never read.
+src/renderer3d/ThreeScene.ts(7,1): error TS6192: All imports in import declaration are unused.
+src/renderer3d/ThreeScene.ts(13,13): error TS6133: 'canvas' is declared but its value is never read.
+src/renderer3d/Token3D.ts(57,15): error TS6133: 'group' is declared but its value is never read.
+src/renderer3d/Token3D.ts(60,15): error TS6133: 'baseGeometry' is declared but its value is never read.
+src/renderer3d/Token3D.ts(63,15): error TS6133: 'bodyGeometry' is declared but its value is never read.
+src/renderer3d/Token3D.ts(66,15): error TS6133: 'headGeometry' is declared but its value is never read.
+src/renderer3d/Token3D.ts(69,15): error TS6133: 'mergedGeometry' is declared but its value is never read.
+src/renderer3d/Token3D.ts(194,59): error TS6133: 'position' is declared but its value is never read.
+src/ui/HUD.ts(8,49): error TS6133: 'PlayerColor' is declared but its value is never read.
+src/ui/HUD.ts(15,13): error TS6133: 'scale' is declared but its value is never read.
+src/ui/TurnIndicator.ts(6,1): error TS6133: 'gsap' is declared but its value is never read.
+src/ui/TurnIndicator.ts(8,1): error TS6192: All imports in import declaration are unused.
+src/ui/TurnIndicator.ts(17,13): error TS6133: 'container' is declared but its value is never read.
+src/ui/TurnIndicator.ts(19,13): error TS6133: 'options' is declared but its value is never read.
