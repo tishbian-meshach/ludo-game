@@ -319,6 +319,55 @@
         </div>
     </div>
 
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="hidden">
+        <div class="game-over-content">
+            <div class="game-over-header">
+                <img src="/src/assets/trophy.png" alt="Trophy" class="header-trophy left-trophy">
+                <h2>GAME OVER</h2>
+                <img src="/src/assets/trophy.png" alt="Trophy" class="header-trophy">
+            </div>
+            <div class="rankings">
+                <div class="rank rank-1">
+                    <div class="rank-badge-container">
+                        <img id="rank-1-medal" src="/src/assets/1st-medal.png" alt="1st" class="rank-medal-img">
+                        <span id="rank-1-number" class="rank-number-overlay" style="display: none;">1</span>
+                    </div>
+                    <span class="rank-label">1st</span>
+                    <span class="rank-name" id="rank-1-name">-</span>
+                </div>
+                <div class="rank rank-2">
+                    <div class="rank-badge-container">
+                        <img id="rank-2-medal" src="/src/assets/2nd-medal.png" alt="2nd" class="rank-medal-img">
+                        <span id="rank-2-number" class="rank-number-overlay" style="display: none;">2</span>
+                    </div>
+                    <span class="rank-label">2nd</span>
+                    <span class="rank-name" id="rank-2-name">-</span>
+                </div>
+                <div class="rank rank-3">
+                    <div class="rank-badge-container">
+                        <img id="rank-3-medal" src="/src/assets/3rd-medal.png" alt="3rd" class="rank-medal-img">
+                        <span id="rank-3-number" class="rank-number-overlay" style="display: none;">3</span>
+                    </div>
+                    <span class="rank-label">3rd</span>
+                    <span class="rank-name" id="rank-3-name">-</span>
+                </div>
+                <div class="rank rank-4">
+                    <div class="rank-badge-container">
+                        <img id="rank-4-medal" src="/src/assets/looser-medal.png" alt="4th" class="rank-medal-img">
+                        <span id="rank-4-number" class="rank-number-overlay">4</span>
+                    </div>
+                    <span class="rank-label">4th</span>
+                    <span class="rank-name" id="rank-4-name">-</span>
+                </div>
+            </div>
+            <div class="game-over-buttons">
+                <button id="btn-game-over-restart" class="btn-primary">PLAY AGAIN</button>
+                <button id="btn-game-over-quit" class="btn-secondary">QUIT</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
 </body>
 

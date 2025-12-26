@@ -6,6 +6,7 @@
 import { GameConfig, GameState } from '../engine2d/GameState';
 import { eventBus } from '../engine2d/EventBus';
 import { PLAYER_ORDER } from '../styles/theme';
+import gsap from 'gsap';
 
 export class UIManager {
     private gameState: GameState;
@@ -136,6 +137,28 @@ export class UIManager {
             }, 500);
         });
 
+        // Listen for player wins to show game over modal
+        eventBus.on('GAME_WON', ({ player }) => {
+            this.checkGameOver();
+        });
+
+        // Game Over Modal Buttons
+        document.getElementById('btn-game-over-restart')?.addEventListener('click', () => {
+            const modal = document.getElementById('game-over-modal');
+            if (modal) modal.classList.add('hidden');
+            if (this.lastGameConfig) {
+                this.onStartGame(this.lastGameConfig);
+                this.createAvatars();
+            }
+        });
+
+        document.getElementById('btn-game-over-quit')?.addEventListener('click', () => {
+            const modal = document.getElementById('game-over-modal');
+            if (modal) modal.classList.add('hidden');
+            this.gameState.reset();
+            this.showScreen(this.startScreen);
+        });
+
         // Local state for toggles (no global config.gameMode anymore)
 
         // Setup Grid Selection & Toggles
@@ -252,7 +275,7 @@ export class UIManager {
         document.getElementById('btn-start-game')?.addEventListener('click', () => {
             // Collect Active Players
             const activeIndices: number[] = [];
-            const playerNames: string[] = [];
+            const playerNames: string[] = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
             const botStatus: boolean[] = [false, false, false, false];
 
             // We iterate 0-3 to maintain order
@@ -262,7 +285,7 @@ export class UIManager {
                     activeIndices.push(i);
 
                     const input = cell.querySelector('input') as HTMLInputElement;
-                    playerNames.push(input.value || `Player ${i + 1}`);
+                    playerNames[i] = input.value || `Player ${i + 1}`;
 
                     const botBtn = cell.querySelector('.type-btn.bot');
                     if (botBtn && botBtn.classList.contains('active')) {
@@ -468,6 +491,164 @@ export class UIManager {
             }
         } else {
             btn.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Check if game should end (N-1 players finished) and show game over modal
+     */
+    private checkGameOver(): void {
+        const winners = this.gameState.getWinners();
+        const playerCount = this.gameState.getPlayerCount();
+
+        // End game when N-1 players have finished
+        if (winners.length >= playerCount - 1 && playerCount > 1) {
+            // Find the remaining players (who didn't finish)
+            const activePlayers = this.lastGameConfig?.activePlayerIndices || [0, 1, 2, 3];
+            const remainingPlayers = activePlayers.filter(p => !winners.includes(p));
+
+            // Build full rankings
+            const rankings = [...winners, ...remainingPlayers];
+
+            // Update modal with rankings
+            this.showGameOverModal(rankings);
+        }
+    }
+
+    /**
+     * Show the game over modal with rankings
+     */
+    private showGameOverModal(rankings: number[]): void {
+        const modal = document.getElementById('game-over-modal');
+        if (!modal) return;
+
+        const playerNames = this.lastGameConfig?.playerNames || ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+        const colorNames: Record<number, string> = { 0: 'Red', 1: 'Green', 2: 'Yellow', 3: 'Blue' };
+
+        // Update rank names in modal and hide unused ranks
+        for (let i = 0; i < 4; i++) {
+            const rankRow = document.querySelector(`.rank-${i + 1}`) as HTMLElement;
+            const nameEl = document.getElementById(`rank-${i + 1}-name`);
+            const medalImg = document.getElementById(`rank-${i + 1}-medal`) as HTMLImageElement;
+            const numberOverlay = document.getElementById(`rank-${i + 1}-number`);
+
+            if (rankings[i] !== undefined) {
+                if (rankRow) rankRow.style.display = 'flex';
+
+                // Update Medal Image
+                if (medalImg) {
+                    if (i === 0) medalImg.src = '/src/assets/1st-medal.png';
+                    else if (i === 1) medalImg.src = '/src/assets/2nd-medal.png';
+                    else if (i === 2) medalImg.src = '/src/assets/3rd-medal.png';
+                    else medalImg.src = '/src/assets/looser-medal.png';
+                }
+
+                // Update Number Overlay (for non-podium finishers)
+                if (numberOverlay) {
+                    if (i >= 3) {
+                        numberOverlay.style.display = 'block';
+                        numberOverlay.textContent = (i + 1).toString();
+                    } else {
+                        numberOverlay.style.display = 'none';
+                    }
+                }
+
+                if (nameEl) {
+                    const playerIndex = rankings[i];
+                    const name = playerNames[playerIndex] || colorNames[playerIndex] || `Player ${playerIndex + 1}`;
+                    nameEl.textContent = name;
+                }
+            } else {
+                if (rankRow) rankRow.style.display = 'none';
+            }
+        }
+
+        // Show modal and pause game
+        modal.classList.remove('hidden');
+        this.gameState.pause();
+
+        // Hide tap-to-roll button
+        const tapBtn = document.getElementById('tap-to-roll');
+        if (tapBtn) tapBtn.classList.add('hidden');
+
+        // Launch confetti celebration!
+        this.launchConfetti();
+    }
+
+    /**
+     * Launch a confetti celebration animation using GSAP
+     */
+    private launchConfetti(): void {
+        const colors = ['#FF0055', '#00FF99', '#FFFF00', '#00CCFF', '#FF6600', '#FF00FF', '#FFD700'];
+        const container = document.getElementById('game-over-modal');
+        if (!container) return;
+
+        // Create confetti pieces
+        const confettiCount = 60;
+        const confettiElements: HTMLElement[] = [];
+
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti-piece';
+            confetti.style.cssText = `
+                position: absolute;
+                width: ${Math.random() * 10 + 6}px;
+                height: ${Math.random() * 10 + 6}px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                left: ${Math.random() * 100}%;
+                top: -20px;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                pointer-events: none;
+                z-index: 10001;
+            `;
+            container.appendChild(confetti);
+            confettiElements.push(confetti);
+
+            // Animate each confetti piece
+            gsap.to(confetti, {
+                y: window.innerHeight + 50,
+                x: (Math.random() - 0.5) * 200,
+                rotation: Math.random() * 720 - 360,
+                duration: Math.random() * 2 + 2,
+                delay: Math.random() * 0.5,
+                ease: 'power1.out',
+                onComplete: () => {
+                    confetti.remove();
+                }
+            });
+        }
+
+        // Add sparkle burst effect at center
+        for (let i = 0; i < 20; i++) {
+            const spark = document.createElement('div');
+            spark.className = 'confetti-spark';
+            spark.style.cssText = `
+                position: absolute;
+                width: 4px;
+                height: 4px;
+                background: #FFD700;
+                left: 50%;
+                top: 50%;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 10002;
+                box-shadow: 0 0 6px #FFD700;
+            `;
+            container.appendChild(spark);
+
+            const angle = (i / 20) * Math.PI * 2;
+            const distance = 80 + Math.random() * 60;
+
+            gsap.to(spark, {
+                x: Math.cos(angle) * distance,
+                y: Math.sin(angle) * distance,
+                opacity: 0,
+                scale: 0,
+                duration: 0.8,
+                delay: 0.1,
+                ease: 'power2.out',
+                onComplete: () => spark.remove()
+            });
         }
     }
 }

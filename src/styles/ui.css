@@ -577,6 +577,184 @@
     }
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   GAME OVER MODAL
+   ───────────────────────────────────────────────────────────────────── */
+#game-over-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fade-in 0.3s ease;
+}
+
+#game-over-modal.hidden {
+    display: none;
+}
+
+.game-over-content {
+    background: rgba(18, 18, 30, 0.95);
+    padding: clamp(1.5rem, 5vw, 2.5rem);
+    border-radius: 20px;
+    border: 2px solid rgba(160, 163, 214, 0.3);
+    text-align: center;
+    width: min(90%, 340px);
+    animation: menu-pop 0.3s ease;
+}
+
+.game-over-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.header-trophy {
+    width: 48px;
+    height: 48px;
+}
+
+.header-trophy.left-trophy {
+    transform: scaleX(-1);
+}
+
+.game-over-content h2 {
+    font-size: 1.5rem;
+    color: var(--neon-gold);
+    margin: 0;
+    letter-spacing: 2px;
+}
+
+.rankings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.rank {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rank-badge-container {
+    position: relative;
+    width: 52px;
+    height: 56px;
+    /* Taller to favor the 1-3 medal assets */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rank-medal-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.rank-number-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    /* Centered for the coin */
+    font-size: 0.85rem;
+    /* Reduced from 1.1rem to fit better */
+    font-weight: 900;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    /* 3D Beveled Effect */
+    text-shadow:
+        0 1px 0 #474242,
+        0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+.rank-1 {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: rgba(255, 215, 0, 0.3);
+}
+
+.rank-2 {
+    background: rgba(192, 192, 192, 0.08);
+    border-color: rgba(192, 192, 192, 0.2);
+}
+
+.rank-3 {
+    background: rgba(205, 127, 50, 0.08);
+    border-color: rgba(205, 127, 50, 0.2);
+}
+
+.rank-medal {
+    font-size: 1.3rem;
+}
+
+.rank-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    width: 30px;
+    text-align: left;
+    font-weight: 700;
+}
+
+.rank-name {
+    flex: 1;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.game-over-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.game-over-buttons .btn-primary {
+    width: 100%;
+    padding: 0.9rem;
+    background: var(--neon-gold);
+    color: var(--deep);
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.game-over-buttons .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+}
+
+.game-over-buttons .btn-secondary {
+    width: 100%;
+    padding: 0.8rem;
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.game-over-buttons .btn-secondary:hover {
+    border-color: var(--text);
+    color: var(--text);
+}
+
 .type-btn {
     flex: 1;
     background: transparent;

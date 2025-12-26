@@ -232,6 +232,10 @@ export class GameState {
         return this.winners.length > 0 ? this.winners[0] : null;
     }
 
+    getWinners(): number[] {
+        return [...this.winners];
+    }
+
     /**
      * Get player's finishing rank (1st, 2nd, etc.)
      * Returns 0 if not finished

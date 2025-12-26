@@ -20,6 +20,10 @@ export class HUD {
     private bannerOpacity: number = 0;
     private bannerPlayer: number = 0;
 
+    // Assets
+    private badgeImages: Map<number, HTMLImageElement> = new Map();
+    private isBadgesLoaded: boolean = false;
+
     constructor(canvas: HTMLCanvasElement, gameState: GameState, size: number) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
@@ -28,6 +32,32 @@ export class HUD {
 
         this.setupHighDPI();
         this.setupEventListeners();
+        this.loadBadges();
+    }
+
+    /**
+     * Load badge images
+     */
+    private loadBadges(): void {
+        const badgeFiles: Record<number, string> = {
+            1: '/src/assets/1st-place.png',
+            2: '/src/assets/2nd-place.png',
+            3: '/src/assets/3rd-place.png',
+            4: '/src/assets/looser.png'
+        };
+
+        let loadedCount = 0;
+        const total = Object.keys(badgeFiles).length;
+
+        Object.entries(badgeFiles).forEach(([rank, path]) => {
+            const img = new Image();
+            img.src = path;
+            img.onload = () => {
+                this.badgeImages.set(parseInt(rank), img);
+                loadedCount++;
+                if (loadedCount === total) this.isBadgesLoaded = true;
+            };
+        });
     }
 
     /**
@@ -273,104 +303,65 @@ export class HUD {
     }
 
     /**
-     * Draw a professional hexagonal winner badge
+     * Draw a professional asset-based winner badge
      */
     private drawPremiumBadge(x: number, y: number, rank: number, cellSize: number): void {
-        const scale = 3.0;
+        if (!this.isBadgesLoaded) return;
+
+        const scale = 3.6; // Slightly larger for high-quality assets
         const size = cellSize * scale;
-        const radius = size / 2;
-
-        const colors = [
-            { main: ['#FFD700', '#FDB931'], highlight: '#FFF8E7', shadow: '#8B7500' }, // Gold
-            { main: ['#E0E0E0', '#B0B0B0'], highlight: '#FFFFFF', shadow: '#696969' }, // Silver
-            { main: ['#CD7F32', '#A0522D'], highlight: '#FFDAB9', shadow: '#5C3317' }, // Bronze
-            { main: ['#778899', '#4A5D6E'], highlight: '#AABBDD', shadow: '#2F4050' }  // Steel
-        ];
-
-        const theme = colors[rank - 1] || colors[3];
 
         this.ctx.save();
         this.ctx.translate(x, y);
 
-        // Gentle pulse
+        // Gentle pulse animation
         const pulse = 1 + Math.sin(this.pulsePhase * 2.5) * 0.03;
         this.ctx.scale(pulse, pulse);
 
-        // Shadow
-        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-        this.ctx.shadowBlur = 10;
-        this.ctx.shadowOffsetY = 4;
+        // Get image (1, 2, 3 or looser)
+        const imgRank = rank > 3 ? 4 : rank;
+        const img = this.badgeImages.get(imgRank);
 
-        // --- Hexagon Shape ---
-        this.ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-            const angle = (Math.PI / 3) * i - Math.PI / 6; // Rotate to point up
-            const px = Math.cos(angle) * radius;
-            const py = Math.sin(angle) * radius;
-            if (i === 0) this.ctx.moveTo(px, py);
-            else this.ctx.lineTo(px, py);
-        }
-        this.ctx.closePath();
+        if (img) {
+            // Drop shadow for depth
+            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowOffsetY = 4;
 
-        // Metallic Gradient Fill
-        const gradient = this.ctx.createLinearGradient(-radius, -radius, radius, radius);
-        gradient.addColorStop(0, theme.main[0]);
-        gradient.addColorStop(0.5, theme.main[1]);
-        gradient.addColorStop(1, theme.main[0]);
-        this.ctx.fillStyle = gradient;
-        this.ctx.fill();
+            this.ctx.drawImage(img, -size / 2, -size / 2, size, size);
 
-        // Inner Bevel (Highlight top-left, Shadow bottom-right)
-        this.ctx.lineWidth = 3;
-        this.ctx.shadowBlur = 0; // Reset shadow for stroke
-        this.ctx.shadowOffsetY = 0;
+            // Reset shadow before drawing text
+            this.ctx.shadowBlur = 0;
+            this.ctx.shadowOffsetY = 0;
 
-        // Inner inset path
-        const inset = 4;
-        this.ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-            const angle = (Math.PI / 3) * i - Math.PI / 6;
-            const px = Math.cos(angle) * (radius - inset);
-            const py = Math.sin(angle) * (radius - inset);
-            if (i === 0) this.ctx.moveTo(px, py);
-            else this.ctx.lineTo(px, py);
-        }
-        this.ctx.closePath();
-
-        // Stroke with gradient for bevel
-        const bevelGrad = this.ctx.createLinearGradient(-radius, -radius, radius, radius);
-        bevelGrad.addColorStop(0, theme.highlight);
-        bevelGrad.addColorStop(1, theme.shadow);
-        this.ctx.strokeStyle = bevelGrad;
-        this.ctx.stroke();
-
-        // --- Rank Typography ---
-        this.ctx.fillStyle = '#FFFFFF';
-        // Add a subtle text shadow for readability
-        this.ctx.shadowColor = theme.shadow;
-        this.ctx.shadowBlur = 2;
-        this.ctx.shadowOffsetX = 1;
-        this.ctx.shadowOffsetY = 1;
-
-        // Large Number
-        this.ctx.font = `800 ${size * 0.45}px "Outfit", sans-serif`;
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(rank.toString(), 0, -size * 0.05);
-
-        // Suffix
-        const suffix = rank === 1 ? 'ST' : rank === 2 ? 'ND' : rank === 3 ? 'RD' : 'TH';
-        this.ctx.font = `600 ${size * 0.15}px "Outfit", sans-serif`;
-        this.ctx.fillText(suffix, 0, size * 0.25);
-
-        // --- Decorative Star (for 1st place only) ---
-        if (rank === 1) {
-            this.ctx.shadowColor = 'transparent';
-            this.ctx.fillStyle = '#FFFFFF';
-            this.drawStar(0, -size * 0.55, 5, size * 0.12, size * 0.06);
+            // Draw 3D rank number for losers (rank > 3)
+            if (rank > 3) {
+                this.draw3DNumber(rank.toString(), 0, size * 0.05, size * 0.28);
+            }
         }
 
         this.ctx.restore();
+    }
+
+    /**
+     * Draw beveled 3D number text for badges
+     */
+    private draw3DNumber(text: string, x: number, y: number, fontSize: number): void {
+        this.ctx.font = `900 ${fontSize}px 'Inter', sans-serif, "Apple Color Emoji", "Segoe UI Emoji"`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+
+        // Shadow layers for beveled / 3D feel
+        this.ctx.fillStyle = '#999999';
+        this.ctx.fillText(text, x, y + 1);
+        this.ctx.fillStyle = '#888888';
+        this.ctx.fillText(text, x, y + 2);
+        this.ctx.fillStyle = '#777777';
+        this.ctx.fillText(text, x, y + 3);
+
+        // Top layer (main color)
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillText(text, x, y);
     }
 
     /**
