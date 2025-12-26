@@ -128,20 +128,28 @@
 }
 
 /* Play Button */
+/* Play Button */
 .btn-primary {
     background: linear-gradient(135deg, var(--neon-gold) 0%, #e6a800 100%);
     border: none;
-    padding: clamp(14px, 3vw, 18px) clamp(40px, 10vw, 60px);
+    padding: clamp(12px, 2vw, 14px) clamp(24px, 5vw, 40px);
     border-radius: 50px;
     font-family: inherit;
     font-weight: 700;
-    font-size: var(--fs-body);
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    /* Dynamic resize */
     color: var(--void);
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 2px;
     position: relative;
     overflow: hidden;
+    white-space: nowrap;
+    /* Prevent wrapping */
+    display: inline-flex;
+    /* Rigid Centering */
+    justify-content: center;
+    align-items: center;
     box-shadow:
         0 0 20px rgba(255, 215, 0, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.3);
@@ -181,15 +189,21 @@
 .btn-secondary {
     background: transparent;
     border: 1px solid var(--text-dim);
-    padding: clamp(10px, 2.5vw, 14px) clamp(24px, 6vw, 36px);
+    padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 32px);
     border-radius: 50px;
     font-family: inherit;
     font-weight: 600;
-    font-size: var(--fs-small);
+    font-size: clamp(0.8rem, 1.5vw, 0.9rem);
     color: var(--text-dim);
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 1px;
+    white-space: nowrap;
+    /* Prevent wrapping */
+    display: inline-flex;
+    /* Rigid Centering */
+    justify-content: center;
+    align-items: center;
     transition: all 0.2s;
 }
 
@@ -272,11 +286,236 @@
         inset 0 0 10px rgba(0, 247, 255, 0.05);
 }
 
-/* Player Name Inputs */
-.player-config {
+/* Player Grid - Professional & Clean */
+.player-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 16px;
+    /* Larger vertical gap for badges */
+    max-width: 360px;
+    margin: 0 auto;
+}
+
+.player-cell {
+    position: relative;
+    border-radius: 12px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    /* Default: Transparent/Dim */
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Unselected State */
+.player-cell:not(.selected) .player-tag {
+    opacity: 0.5;
+
+}
+
+.player-cell:hover {
+    transform: translateY(-2px);
+}
+
+.player-cell:hover .player-tag {
+    opacity: 0.8;
+
+}
+
+/* Selected State - No square glow, just tag focus */
+/* Selected State - Single Box Look */
+.player-cell.selected {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--cell-color);
+    box-shadow: 0 0 15px var(--cell-color-glow);
+    opacity: 1;
+}
+
+/* Adjust Bot Icon Size locally */
+.type-btn.bot svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* Background Letter - Subtle watermark */
+.cell-bg-letter {
+    display: none;
+    /* Removing as per "extra square" cleanup request */
+}
+
+/* Set CSS variables for colors in JS or here if static */
+.player-cell[data-color="red"] {
+    --cell-color: var(--p-red);
+}
+
+.player-cell[data-color="green"] {
+    --cell-color: var(--p-green);
+}
+
+.player-cell[data-color="yellow"] {
+    --cell-color: var(--p-yellow);
+}
+
+.player-cell[data-color="blue"] {
+    --cell-color: var(--p-blue);
+}
+
+
+/* The Rectangular Player Tag (Content Container) */
+.player-tag {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    /* Space for toggle below */
+}
+
+/* Selected Tag - Content Focus only */
+.player-cell.selected .player-tag {
+    opacity: 1;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.player-tag input {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    width: 100%;
+    outline: none;
+    padding: 0;
+}
+
+.player-tag input::placeholder {
+    color: var(--text-dim);
+    opacity: 0.5;
+}
+
+/* Color Dot */
+.player-tag .color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 5px currentColor;
+    /* Small glow for dot is okay */
+}
+
+/* Edit Icon */
+.player-tag .edit-icon {
+    font-size: 12px;
+    color: var(--text-dim);
+    opacity: 0.4;
+    cursor: text;
+    /* Suggests clicking input */
+    transform: rotateY(180deg);
+    /* Flip it if needed */
+}
+
+.player-cell.selected .edit-icon {
+    opacity: 0.8;
+}
+
+/* Player Type Toggle (Segmented Control) */
+.player-type-toggle {
+    display: flex;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    padding: 3px;
+    margin-top: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 90px;
+    justify-content: space-between;
+    gap: 2px;
+    transition: opacity 0.3s ease;
+    z-index: 2;
+}
+
+/* Hide toggle if cell not selected */
+.player-cell:not(.selected) .player-type-toggle {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-5px);
+}
+
+.player-cell.selected .player-type-toggle {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.type-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.type-btn:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.type-btn.active {
+    color: #000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.type-btn.active.human {
+    background: var(--p-blue);
+    /* Or generic active color */
+    background: #fff;
+}
+
+.type-btn.active.bot {
+    background: var(--neon-gold);
+}
+
+/* Badges (You, Bot) */
+.player-cell .player-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 2;
+}
+
+.player-badge.you {
+    background: var(--neon-cyan);
+    color: #000;
+    border: none;
+}
+
+.player-badge.bot {
+    background: var(--neon-gold);
+    color: #000;
+    border: none;
+    display: none;
+    /* JS toggles this */
 }
 
 .input-group {
@@ -352,18 +591,43 @@
     color: var(--neon-cyan);
 }
 
+/* Player badges */
+.player-badge {
+    font-size: clamp(0.6rem, 1.5vw, 0.7rem);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.player-badge.you {
+    background: rgba(0, 247, 255, 0.15);
+    color: var(--neon-cyan);
+    border: 1px solid rgba(0, 247, 255, 0.3);
+}
+
+.player-badge.bot {
+    background: rgba(255, 215, 0, 0.15);
+    color: var(--neon-gold);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
 .modal-actions {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     margin-top: clamp(20px, 4vw, 28px);
+    justify-content: center;
+    /* Center them */
 }
 
-.modal-actions .btn-primary {
-    flex: 1.5;
-}
-
+/* Remove forced flex expansion so they don't stretch */
+.modal-actions .btn-primary,
 .modal-actions .btn-secondary {
-    flex: 1;
+    flex: 0 1 auto;
+    min-width: 120px;
+    /* Minimum clickable area */
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -541,5 +805,66 @@
     .p-avatar-1,
     .p-avatar-2 {
         right: 5px;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   TOAST NOTIFICATIONS
+   ───────────────────────────────────────────────────────────────────── */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    width: clamp(280px, 80vw, 400px);
+}
+
+.toast {
+    background: rgba(20, 20, 30, 0.95);
+    border: 1px solid var(--neon-cyan);
+    color: var(--text);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: var(--fs-small);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    animation: toast-in 0.3s ease-out forwards;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.toast.error {
+    border-color: var(--p-red);
+    box-shadow: 0 0 15px rgba(255, 71, 87, 0.2);
+}
+
+.toast.success {
+    border-color: var(--p-green);
+    box-shadow: 0 0 15px rgba(46, 204, 113, 0.2);
+}
+
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toast-out {
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
     }
 }

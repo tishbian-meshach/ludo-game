@@ -84,6 +84,10 @@ export const getPlayerColors = (playerIndex: number) => {
     return COLORS.players[color];
 };
 
+export const getPlayerColorsByName = (colorName: PlayerColor) => {
+    return COLORS.players[colorName];
+};
+
 // Sizing
 export const SIZES = {
     cell: 28, // Base cell size in pixels (smaller for grid)

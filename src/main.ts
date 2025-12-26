@@ -25,6 +25,7 @@ import { HUD } from './ui/HUD';
 import { DebugPanel } from './ui/DebugPanel';
 import { UIManager } from './ui/UIManager';
 import { GameConfig } from './engine2d/GameState';
+import { BotController } from './engine2d/BotController';
 
 // Debug imports
 import { setupDebugConsole } from './debug/DebugConsole';
@@ -57,6 +58,9 @@ class LudoGame {
     private hud!: HUD;
     private debugPanel!: DebugPanel;
     private uiManager!: UIManager;
+
+    // Bot AI
+    private botController!: BotController;
 
     // Game loop
     private lastTime: number = 0;
@@ -179,9 +183,93 @@ class LudoGame {
     /**
      * Start the game with config
      */
+    /**
+     * Start the game with config
+     */
     private startGame(config?: GameConfig): void {
-        const gameConfig = config || { playerCount: 4, playerNames: [], gameMode: 'friends' };
+        const gameConfig = config || {
+            playerCount: 4,
+            activePlayerIndices: [0, 1, 2, 3],
+            playerNames: [],
+            botStatus: [false, false, false, false]
+        };
         this.gameState.startGame(gameConfig);
+
+        // Initialize bot controller if any bots are active
+        if (gameConfig.botStatus.some(isBot => isBot)) {
+            this.botController = new BotController(
+                this.gameState.getTokens(),
+                this.gameState.getRules()
+            );
+            this.setupBotListeners();
+
+            // Check if the starting player is a bot (catch missing initial event)
+            const currentPlayer = this.gameState.getCurrentPlayer();
+            if (this.gameState.isBot(currentPlayer)) {
+                this.executeBotTurn(currentPlayer).catch(console.error);
+            }
+        }
+    }
+
+    /**
+     * Setup event listeners for bot turns
+     */
+    private setupBotListeners(): void {
+        // Listen for turn changes to trigger bot actions
+        eventBus.on('TURN_CHANGED', async ({ player }) => {
+            if (this.gameState.isBot(player)) {
+                await this.executeBotTurn(player);
+            }
+        });
+    }
+
+    /**
+     * Execute a bot's turn (handles multiple rolls for 6s, captures, etc.)
+     */
+    private async executeBotTurn(playerIndex: number): Promise<void> {
+        // Keep playing while it's still this bot's turn
+        while (true) {
+            // Wait a moment for visual feedback
+            await new Promise(resolve => setTimeout(resolve, 700));
+
+            // Check if it's still this bot's turn
+            if (this.gameState.getCurrentPlayer() !== playerIndex) break;
+            if (this.gameState.getPhase() !== 'playing') break;
+
+            const phase = this.gameState.getTurnPhase();
+
+            // If waiting for roll, roll the dice
+            if (phase === 'waiting-for-roll') {
+                await this.gameState.handleDiceClick();
+
+                // Wait for dice animation to complete
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue; // Check phase again
+            }
+
+            // If waiting for move, select best token
+            if (phase === 'waiting-for-move') {
+                const diceValue = this.gameState.getDice().getValue();
+                const bestMove = this.botController.findBestMove(playerIndex, diceValue);
+
+                if (bestMove) {
+                    await this.gameState.handleTokenSelection(bestMove.tokenId);
+
+                    // Wait for move animation
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                }
+                continue; // Check if we get another roll
+            }
+
+            // If animating or moving, wait a bit and check again
+            if (phase === 'rolling' || phase === 'moving' || phase === 'animating') {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                continue;
+            }
+
+            // Turn ending or other state - break out
+            break;
+        }
     }
 
     /**

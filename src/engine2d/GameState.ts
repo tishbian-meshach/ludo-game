@@ -14,16 +14,19 @@ import { PLAYER_ORDER, PlayerColor } from '../styles/theme';
 export type GamePhase = 'menu' | 'playing' | 'paused' | 'ended';
 
 export interface GameConfig {
-    playerCount: 2 | 4;
+    playerCount: number;
+    activePlayerIndices: number[];
     playerNames: string[];
-    gameMode: 'friends' | 'bot';
+    // explicit bot status for each player index [true, false, true, false]
+    botStatus: boolean[];
 }
 
 export class GameState {
     private phase: GamePhase = 'menu';
     private playerCount: number = 4;
     private playerNames: string[] = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
-    private gameMode: 'friends' | 'bot' = 'friends';
+    private botPlayers: boolean[] = [false, false, false, false]; // true = bot, false = human
+    private playerBoardMapping: number[] = [0, 1, 2, 3]; // Maps logical player index to board position
     private winners: number[] = [];
 
     // Core components
@@ -35,11 +38,12 @@ export class GameState {
 
     constructor(boardSize: number = 600) {
         this.boardModel = new BoardModel(boardSize);
-        this.tokenModel = new TokenModel(this.playerCount);
+        // Default to 4 players [0, 1, 2, 3]
+        this.tokenModel = new TokenModel([0, 1, 2, 3]);
         this.diceLogic = new DiceLogic();
         this.rules = new Rules(this.tokenModel);
         this.turnManager = new TurnManager(
-            this.playerCount,
+            [0, 1, 2, 3],
             this.diceLogic,
             this.rules,
             this.tokenModel
@@ -71,15 +75,20 @@ export class GameState {
     startGame(config: GameConfig): void {
         this.playerCount = config.playerCount;
         this.playerNames = config.playerNames;
-        this.gameMode = config.gameMode;
         this.phase = 'playing';
         this.winners = [];
 
-        // Reinitialize components with new player count
-        this.tokenModel.reset(this.playerCount);
+        // Use explicit active player indices from config
+        this.playerBoardMapping = config.activePlayerIndices;
+
+        // Set up bot players from config
+        this.botPlayers = [...config.botStatus];
+
+        // Reinitialize components with new active players
+        this.tokenModel.reset(this.playerBoardMapping);
         this.diceLogic.reset();
         this.turnManager = new TurnManager(
-            this.playerCount,
+            this.playerBoardMapping,
             this.diceLogic,
             this.rules,
             this.tokenModel
@@ -132,7 +141,7 @@ export class GameState {
         this.phase = 'menu';
         this.phase = 'menu';
         this.winners = [];
-        this.tokenModel.reset(this.playerCount);
+        this.tokenModel.reset(this.playerBoardMapping);
         this.diceLogic.reset();
         this.turnManager.reset();
         eventBus.emit('GAME_RESET', {});
@@ -151,12 +160,24 @@ export class GameState {
         return this.playerNames;
     }
 
+    isBot(playerIndex: number): boolean {
+        return this.botPlayers[playerIndex] ?? false;
+    }
+
     getCurrentPlayer(): number {
         return this.turnManager.getCurrentPlayer();
     }
 
     getCurrentPlayerColor(): PlayerColor {
+        // Now getCurrentPlayer returns actual player index (0, 2, etc.)
         return PLAYER_ORDER[this.getCurrentPlayer()];
+    }
+
+    /**
+     * Get the list of active player indices for this game
+     */
+    getActivePlayerIndices(): number[] {
+        return this.playerBoardMapping;
     }
 
     getTurnPhase(): TurnPhase {
@@ -165,6 +186,21 @@ export class GameState {
 
     canRoll(): boolean {
         return this.phase === 'playing' && this.turnManager.canRoll();
+    }
+
+    /**
+     * Handle dice click (for bots and human players)
+     */
+    async handleDiceClick(): Promise<void> {
+        if (!this.canRoll()) return;
+        await this.turnManager.rollDice();
+    }
+
+    /**
+     * Handle token selection (for bots and human players)
+     */
+    async handleTokenSelection(tokenId: string): Promise<boolean> {
+        return this.turnManager.selectToken(tokenId);
     }
 
     getBoard(): BoardModel {

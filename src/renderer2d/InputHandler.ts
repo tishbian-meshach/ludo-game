@@ -211,6 +211,12 @@ export class InputHandler {
         if (now - this.lastTapTime < this.config.debounceTime) return;
         if (this.isInputLocked) return;
 
+        // Block input when it's a bot's turn
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        if (this.gameState.isBot(currentPlayer)) {
+            return; // Ignore input during bot turns
+        }
+
         this.lastTapTime = now;
 
         const phase = this.gameState.getTurnPhase();

@@ -6,7 +6,7 @@
 import { TokenModel, Token } from '../engine2d/TokenModel';
 import { BoardModel, TokenPosition } from '../engine2d/BoardModel';
 import { eventBus } from '../engine2d/EventBus';
-import { getPlayerColors, SIZES, BOARD } from '../styles/theme';
+import { getPlayerColorsByName, SIZES, BOARD, PlayerColor } from '../styles/theme';
 
 interface AnimatingToken {
     token: Token;
@@ -355,7 +355,7 @@ export class TokenRenderer2D {
                 const isHighlighted = this.highlightedTokens.has(token.id);
                 const isSelected = this.selectedToken === token.id;
 
-                this.drawTokenAt(x, y, token.playerIndex, isHighlighted, isSelected, scale);
+                this.drawTokenAt(x, y, token.playerColor, isHighlighted, isSelected, scale);
             });
         });
     }
@@ -434,7 +434,7 @@ export class TokenRenderer2D {
                 y += index * spacing;
             }
 
-            this.drawTokenAt(x, y, token.playerIndex, false, false, tokenScale);
+            this.drawTokenAt(x, y, token.playerColor, false, false, tokenScale);
         });
     }
 
@@ -503,7 +503,7 @@ export class TokenRenderer2D {
 
         const hop = !anim.isCapture ? Math.sin(t * Math.PI) * 8 : 0;
 
-        this.drawTokenAt(x, y - hop, anim.token.playerIndex, false, false, 1.1);
+        this.drawTokenAt(x, y - hop, anim.token.playerColor, false, false, 1.1);
     }
 
     private renderToken(token: Token): void {
@@ -513,11 +513,11 @@ export class TokenRenderer2D {
         const isHighlighted = this.highlightedTokens.has(token.id);
         const isSelected = this.selectedToken === token.id;
 
-        this.drawTokenAt(pos.x, pos.y, token.playerIndex, isHighlighted, isSelected);
+        this.drawTokenAt(pos.x, pos.y, token.playerColor, isHighlighted, isSelected);
     }
 
-    private drawTokenAt(x: number, y: number, playerIndex: number, isHighlighted: boolean, isSelected: boolean, scale: number = 1): void {
-        const colors = getPlayerColors(playerIndex);
+    private drawTokenAt(x: number, y: number, playerColor: PlayerColor, isHighlighted: boolean, isSelected: boolean, scale: number = 1): void {
+        const colors = getPlayerColorsByName(playerColor);
 
         // Calculate dynamic radius based on board size (15 cells across)
         const cellSize = this.boardModel.size / 15;

@@ -22,17 +22,20 @@ export interface Token {
 export class TokenModel {
     private tokens: Map<string, Token> = new Map();
 
-    constructor(playerCount: number) {
-        this.initializeTokens(playerCount);
+    constructor(activePlayerIndices: number[] = [0, 1, 2, 3]) {
+        this.initializeTokens(activePlayerIndices);
     }
 
     /**
      * Initialize all tokens for all players
+     * For 2 players: Red (0) and Yellow (2) - opposite corners
+     * For 3 players: Red (0), Green (1), Yellow (2)
+     * For 4 players: All corners
      */
-    private initializeTokens(playerCount: number): void {
+    private initializeTokens(activePlayerIndices: number[]): void {
         this.tokens.clear();
 
-        for (let playerIndex = 0; playerIndex < playerCount; playerIndex++) {
+        for (const playerIndex of activePlayerIndices) {
             const playerColor = PLAYER_ORDER[playerIndex];
 
             for (let tokenIndex = 0; tokenIndex < BOARD.tokensPerPlayer; tokenIndex++) {
@@ -40,8 +43,8 @@ export class TokenModel {
 
                 this.tokens.set(id, {
                     id,
-                    playerIndex,
-                    playerColor,
+                    playerIndex,   // Use actual player index (0, 2 for 2-player)
+                    playerColor,   // Matches the player index
                     tokenIndex,
                     state: 'home',
                     position: { type: 'spawn', spawnIndex: tokenIndex },
@@ -244,8 +247,8 @@ export class TokenModel {
     /**
      * Reset all tokens
      */
-    reset(playerCount: number): void {
-        this.initializeTokens(playerCount);
+    reset(activePlayerIndices: number[]): void {
+        this.initializeTokens(activePlayerIndices);
     }
 }
 

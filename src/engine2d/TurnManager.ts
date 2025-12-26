@@ -27,6 +27,8 @@ export interface TurnState {
 
 export class TurnManager {
     private playerCount: number;
+    private activePlayerIndices: number[]; // [0, 2] for 2-player, [0, 1, 2, 3] for 4-player
+    private currentPlayerSlot: number = 0; // Index into activePlayerIndices
     private currentPlayer: number = 0;
     private phase: TurnPhase = 'waiting-for-roll';
     private diceValue: number = 0;
@@ -40,12 +42,13 @@ export class TurnManager {
     private tokenModel: TokenModel;
 
     constructor(
-        playerCount: number,
+        activePlayerIndices: number[],
         dice: DiceLogic,
         rules: Rules,
         tokenModel: TokenModel
     ) {
-        this.playerCount = playerCount;
+        this.playerCount = activePlayerIndices.length;
+        this.activePlayerIndices = activePlayerIndices;
         this.dice = dice;
         this.rules = rules;
         this.tokenModel = tokenModel;
@@ -55,7 +58,8 @@ export class TurnManager {
      * Start the game
      */
     start(): void {
-        this.currentPlayer = 0;
+        this.currentPlayerSlot = 0;
+        this.currentPlayer = this.activePlayerIndices[0];
         this.phase = 'waiting-for-roll';
         this.consecutiveSixes = 0;
         this.dice.enableRoll();
@@ -249,12 +253,12 @@ export class TurnManager {
         const previousPlayer = this.currentPlayer;
 
         // Advance to next player who hasn't finished
-        // We assume at least one player hasn't finished (GameState handles game end)
         let loopCount = 0;
         do {
-            this.currentPlayer = (this.currentPlayer + 1) % this.playerCount;
+            this.currentPlayerSlot = (this.currentPlayerSlot + 1) % this.activePlayerIndices.length;
+            this.currentPlayer = this.activePlayerIndices[this.currentPlayerSlot];
             loopCount++;
-        } while (this.rules.checkWin(this.currentPlayer) && loopCount < this.playerCount);
+        } while (this.rules.checkWin(this.currentPlayer) && loopCount < this.activePlayerIndices.length);
 
         this.consecutiveSixes = 0;
         this.canRollAgain = false;
