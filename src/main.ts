@@ -147,6 +147,32 @@ class LudoGame {
 
         // Setup debug console (development only)
         setupDebugConsole(this.gameState);
+
+        // Global listener for game start (handles both new games and resumes)
+        eventBus.on('GAME_STARTED', ({ playerCount, resumed }) => {
+            // Initialize bot controller if any bots are active
+            // This handles resumed games where startGame() isn't called
+            if (resumed) {
+                const botStatus = this.gameState.getActivePlayerIndices().map(
+                    idx => this.gameState.isBot(idx)
+                );
+                if (botStatus.some(isBot => isBot)) {
+                    this.botController = new BotController(
+                        this.gameState.getTokens(),
+                        this.gameState.getRules()
+                    );
+                    this.setupBotListeners();
+
+                    // Check if current player is a bot and trigger their turn
+                    const currentPlayer = this.gameState.getCurrentPlayer();
+                    if (this.gameState.isBot(currentPlayer)) {
+                        setTimeout(() => {
+                            this.executeBotTurn(currentPlayer).catch(console.error);
+                        }, 500);
+                    }
+                }
+            }
+        });
     }
 
     /**
