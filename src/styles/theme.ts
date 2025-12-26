@@ -36,18 +36,18 @@ export const COLORS = {
         },
     },
 
-    // Board colors - Cyberpunk dark grid
+    // Board colors - Semi-transparent to show background
     board: {
-        background: '#050510',
-        backgroundGradientStart: '#0A0A1F',
-        backgroundGradientEnd: '#000000',
-        cell: '#111122',
+        background: 'rgba(5, 5, 16, 0)',
+        backgroundGradientStart: 'rgba(10, 10, 31, 0)',
+        backgroundGradientEnd: 'rgba(0, 0, 0, 0)',
+        cell: 'rgba(17, 17, 34, 0.5)',
         cellBorder: '#222244',
         cellHighlight: '#333366',
-        safeZone: '#222244',
-        path: '#0D0D1A',
+        safeZone: 'rgba(34, 34, 68, 0.5)',
+        path: 'rgba(13, 13, 26, 0.6)',
         centerStar: '#FFFF00',
-        homePath: '#0A0A15',
+        homePath: 'rgba(10, 10, 21, 0.6)',
     },
 
     // UI colors

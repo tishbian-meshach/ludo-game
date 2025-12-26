@@ -23,6 +23,8 @@ import { Effects } from './renderer3d/Effects';
 // UI imports
 import { HUD } from './ui/HUD';
 import { DebugPanel } from './ui/DebugPanel';
+import { UIManager } from './ui/UIManager';
+import { GameConfig } from './engine2d/GameState';
 
 // Debug imports
 import { setupDebugConsole } from './debug/DebugConsole';
@@ -54,6 +56,7 @@ class LudoGame {
     // UI
     private hud!: HUD;
     private debugPanel!: DebugPanel;
+    private uiManager!: UIManager;
 
     // Game loop
     private lastTime: number = 0;
@@ -86,11 +89,11 @@ class LudoGame {
             canvas.style.height = `${this.boardSize}px`;
         });
 
-        // Initialize game state
+        // Initialize game state logic
         this.boardModel = new BoardModel(this.boardSize);
         this.gameState = new GameState(this.boardSize);
 
-        // Initialize 2D renderers - use SEPARATE canvases
+        // Initialize Renderers
         this.boardCanvas = new BoardCanvas(this.canvasBoard, this.boardModel);
         this.tokenRenderer = new TokenRenderer2D(
             this.canvasTokens,
@@ -104,17 +107,24 @@ class LudoGame {
             this.boardModel
         );
 
-        // Initialize 3D renderers
         this.threeScene = new ThreeScene(this.canvas3D, this.boardSize);
         this.dice3D = new Dice3D(this.threeScene);
         this.token3D = new Token3D(this.threeScene, this.boardModel);
         this.cameraController = new CameraController(this.threeScene);
         this.effects = new Effects(this.threeScene);
 
-        // Initialize UI
         this.hud = new HUD(this.canvasUI, this.gameState, this.boardSize);
         // Pass container for correct positioning
         this.debugPanel = new DebugPanel(this.gameState.getDice(), this.container);
+
+        // Initialize UI Manager
+        // Blur container initially
+        this.container.style.filter = 'blur(10px) brightness(0.6)';
+        this.container.style.pointerEvents = 'none';
+
+        this.uiManager = new UIManager(this.gameState, (config: GameConfig) => {
+            this.startGame(config);
+        });
 
         // Setup resize handler
         window.addEventListener('resize', this.handleResize.bind(this));
@@ -126,8 +136,10 @@ class LudoGame {
             setTimeout(() => loading.remove(), 500);
         }
 
-        // Start game
-        this.startGame();
+        // Start Loop (but game phase is 'menu')
+        this.isRunning = true;
+        this.lastTime = performance.now();
+        this.gameLoop();
 
         // Setup debug console (development only)
         setupDebugConsole(this.gameState);
@@ -164,15 +176,12 @@ class LudoGame {
     /**
      * Start the game
      */
-    private startGame(): void {
-        // Start with menu or directly into game
-        // For MVP, start 4-player game directly
-        this.gameState.startGame({ playerCount: 4 });
-
-        // Start game loop
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        this.gameLoop();
+    /**
+     * Start the game with config
+     */
+    private startGame(config?: GameConfig): void {
+        const gameConfig = config || { playerCount: 4, playerNames: [], gameMode: 'friends' };
+        this.gameState.startGame(gameConfig);
     }
 
     /**

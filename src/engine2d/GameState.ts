@@ -15,11 +15,15 @@ export type GamePhase = 'menu' | 'playing' | 'paused' | 'ended';
 
 export interface GameConfig {
     playerCount: 2 | 4;
+    playerNames: string[];
+    gameMode: 'friends' | 'bot';
 }
 
 export class GameState {
     private phase: GamePhase = 'menu';
     private playerCount: number = 4;
+    private playerNames: string[] = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+    private gameMode: 'friends' | 'bot' = 'friends';
     private winners: number[] = [];
 
     // Core components
@@ -66,6 +70,8 @@ export class GameState {
      */
     startGame(config: GameConfig): void {
         this.playerCount = config.playerCount;
+        this.playerNames = config.playerNames;
+        this.gameMode = config.gameMode;
         this.phase = 'playing';
         this.winners = [];
 
@@ -80,6 +86,9 @@ export class GameState {
         );
 
         this.turnManager.start();
+
+        // Emit config changed so UI can update
+        eventBus.emit('GAME_STARTED', { playerCount: this.playerCount });
     }
 
     /**
@@ -136,6 +145,10 @@ export class GameState {
 
     getPlayerCount(): number {
         return this.playerCount;
+    }
+
+    getPlayerNames(): string[] {
+        return this.playerNames;
     }
 
     getCurrentPlayer(): number {

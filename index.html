@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>Premium Ludo</title>
+    <link rel="stylesheet" href="/src/styles/ui.css">
     <style>
         * {
             margin: 0;
@@ -24,12 +25,38 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background: linear-gradient(135deg, #1A1A2E 0%, #0F0F1A 100%);
+            background: #010325;
             font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
             touch-action: none;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+        }
+
+        /* Background image layer with opacity */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('/game-bg.jpg') center center / cover no-repeat;
+            opacity: 0.5;
+            z-index: 0;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+
+        /* Mobile portrait: rotate background 90deg */
+        @media (orientation: portrait) {
+            body::before {
+                width: 100vh;
+                height: 100vw;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(90deg);
+            }
         }
 
         #game-container {
@@ -39,6 +66,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 1;
         }
 
         #canvas-board {
@@ -103,6 +131,82 @@
     <div class="loading" id="loading">
         <div class="loading-spinner"></div>
     </div>
+    <div id="ui-layer">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <div class="logo-container">
+                <img src="/src/assets/logo.png" alt="Ludo" class="game-logo">
+            </div>
+            <button id="btn-play-initial" class="btn-primary">PLAY LUDO</button>
+        </div>
+
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="screen hidden">
+            <div class="modal-content">
+                <h2>GAME SETUP</h2>
+
+                <div class="form-group">
+                    <label>Game Mode</label>
+                    <div class="toggle-group">
+                        <button class="toggle-btn active" data-mode="friends">Friends</button>
+                        <button class="toggle-btn" data-mode="bot">Vs Bot</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Players</label>
+                    <div class="toggle-group">
+                        <button class="toggle-btn" data-players="2">2</button>
+                        <button class="toggle-btn" data-players="3">3</button>
+                        <button class="toggle-btn active" data-players="4">4</button>
+                    </div>
+                </div>
+
+                <div class="player-config">
+                    <div class="input-group">
+                        <span class="color-dot red"></span>
+                        <input type="text" id="p0-name" value="Player 1" placeholder="Name">
+                        <span class="edit-icon">✎</span>
+                    </div>
+                    <div class="input-group">
+                        <span class="color-dot green"></span>
+                        <input type="text" id="p1-name" value="Player 2" placeholder="Name">
+                        <span class="edit-icon">✎</span>
+                    </div>
+                    <div class="input-group">
+                        <span class="color-dot yellow"></span>
+                        <input type="text" id="p2-name" value="Player 3" placeholder="Name">
+                        <span class="edit-icon">✎</span>
+                    </div>
+                    <div class="input-group">
+                        <span class="color-dot blue"></span>
+                        <input type="text" id="p3-name" value="Player 4" placeholder="Name">
+                        <span class="edit-icon">✎</span>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="btn-back" class="btn-secondary">BACK</button>
+                    <button id="btn-start-game" class="btn-primary">START GAME</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- In-Game UI Overlay -->
+        <div id="game-ui-overlay" class="screen hidden no-bg">
+            <!-- Top Bar -->
+            <div class="game-header">
+                <img src="/src/assets/logo.png" alt="Logo" class="mini-logo">
+                <button id="btn-menu" class="icon-btn">☰</button>
+            </div>
+
+            <!-- Player Avatars (Absolute positioned via CSS to match corners/sides) -->
+            <div id="avatar-container">
+                <!-- Injected dynamically -->
+            </div>
+        </div>
+    </div>
+
     <div id="game-container">
         <canvas id="canvas-board"></canvas>
         <canvas id="canvas-tokens"></canvas>
