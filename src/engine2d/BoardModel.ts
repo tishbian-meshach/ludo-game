@@ -81,6 +81,16 @@ export class BoardModel {
     }
 
     /**
+     * Resize board logic
+     */
+    resize(newSize: number): void {
+        this.boardSize = newSize;
+        this.cellSize = Math.floor(this.boardSize / 17);
+        this.gridOffset = (this.boardSize - this.cellSize * 15) / 2;
+        this.calculateAllPositions();
+    }
+
+    /**
      * Convert grid coordinates to pixel position
      */
     private gridToPixel(row: number, col: number): BoardPosition {

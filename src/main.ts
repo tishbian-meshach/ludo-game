@@ -24,6 +24,9 @@ import { Effects } from './renderer3d/Effects';
 import { HUD } from './ui/HUD';
 import { DebugPanel } from './ui/DebugPanel';
 
+// Debug imports
+import { setupDebugConsole } from './debug/DebugConsole';
+
 class LudoGame {
     // Canvas elements
     private canvasBoard!: HTMLCanvasElement;
@@ -110,7 +113,8 @@ class LudoGame {
 
         // Initialize UI
         this.hud = new HUD(this.canvasUI, this.gameState, this.boardSize);
-        this.debugPanel = new DebugPanel(this.gameState.getDice());
+        // Pass container for correct positioning
+        this.debugPanel = new DebugPanel(this.gameState.getDice(), this.container);
 
         // Setup resize handler
         window.addEventListener('resize', this.handleResize.bind(this));
@@ -124,6 +128,9 @@ class LudoGame {
 
         // Start game
         this.startGame();
+
+        // Setup debug console (development only)
+        setupDebugConsole(this.gameState);
     }
 
     /**
@@ -143,9 +150,11 @@ class LudoGame {
         this.calculateBoardSize();
 
         // Resize all components
+        this.boardModel.resize(this.boardSize);
         this.boardCanvas.resize(this.boardSize);
         this.tokenRenderer.resize(this.boardSize);
         this.threeScene.resize(this.boardSize);
+        this.dice3D.resize(this.boardSize);
         this.hud.resize(this.boardSize);
 
         // Re-render static board

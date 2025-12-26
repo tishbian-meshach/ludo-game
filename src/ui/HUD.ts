@@ -207,8 +207,8 @@ export class HUD {
     render(): void {
         this.ctx.clearRect(0, 0, this.size, this.size);
 
-        // Draw player indicators in corners
-        this.drawPlayerIndicators();
+        // Player avatars removed as per request (moved to external UI)
+        // this.drawPlayerIndicators();
 
         // Draw current player highlight
         this.drawCurrentPlayerHighlight();
@@ -222,76 +222,194 @@ export class HUD {
      */
     private drawFinishRanks(): void {
         const playerCount = this.gameState.getPlayerCount();
-        const center = this.size / 2;
-        // Position badges in the center of each player's triangle
-        const offset = this.size * 0.15;
+        const board = this.gameState.getBoard();
+
+        // Use exact metrics from BoardModel to align perfectly with the grid
+        // Property access might need casting if private in TS, but getters usually available
+        // BoardModel usually has 'cell' and 'offset' public per BoardCanvas usage
+        const cellSize = board.cell;
+        const gridOffset = board.offset;
+
+        // Center of a 6x6 spawn area is at 3 units from its top-left
+        const spawnCenterOffset = 3 * cellSize;
 
         for (let i = 0; i < playerCount; i++) {
             // @ts-ignore - method added in GameState
             const rank = this.gameState.getFinishRank(i);
 
             if (rank > 0) {
-                let x = center;
-                let y = center;
+                let x = 0;
+                let y = 0;
 
-                // Position based on player side
+                // Calculate center of each spawn area
+                // Red: Top-Left at (offset, offset)
+                // Green: Top-Right at (size - offset - 6*cell, offset)
+                // Yellow: Bottom-Right at (size - offset - 6*cell, size - offset - 6*cell)
+                // Blue: Bottom-Left at (offset, size - offset - 6*cell)
+
+                // Centers:
                 switch (i) {
-                    case 0: x -= offset; break; // Red (Left)
-                    case 1: y -= offset; break; // Green (Top)
-                    case 2: x += offset; break; // Yellow (Right)
-                    case 3: y += offset; break; // Blue (Bottom)
+                    case 0: // Red (Top Left)
+                        x = gridOffset + spawnCenterOffset;
+                        y = gridOffset + spawnCenterOffset;
+                        break;
+                    case 1: // Green (Top Right)
+                        x = this.size - gridOffset - spawnCenterOffset;
+                        y = gridOffset + spawnCenterOffset;
+                        break;
+                    case 2: // Yellow (Bottom Right)
+                        x = this.size - gridOffset - spawnCenterOffset;
+                        y = this.size - gridOffset - spawnCenterOffset;
+                        break;
+                    case 3: // Blue (Bottom Left)
+                        x = gridOffset + spawnCenterOffset;
+                        y = this.size - gridOffset - spawnCenterOffset;
+                        break;
                 }
 
-                this.drawRankBadge(x, y, rank);
+                this.drawPremiumBadge(x, y, rank, cellSize);
             }
         }
     }
 
-    private drawRankBadge(x: number, y: number, rank: number): void {
-        const colors = ['#FFD700', '#C0C0C0', '#CD7F32', '#778899']; // Gold, Silver, Bronze, Steel
-        const shadows = ['#CCAA00', '#8899AA', '#884411', '#445566'];
+    /**
+     * Draw a professional hexagonal winner badge
+     */
+    private drawPremiumBadge(x: number, y: number, rank: number, cellSize: number): void {
+        const scale = 3.0;
+        const size = cellSize * scale;
+        const radius = size / 2;
 
-        const baseColor = colors[rank - 1] || '#FFFFFF';
-        const darkColor = shadows[rank - 1] || '#888888';
+        const colors = [
+            { main: ['#FFD700', '#FDB931'], highlight: '#FFF8E7', shadow: '#8B7500' }, // Gold
+            { main: ['#E0E0E0', '#B0B0B0'], highlight: '#FFFFFF', shadow: '#696969' }, // Silver
+            { main: ['#CD7F32', '#A0522D'], highlight: '#FFDAB9', shadow: '#5C3317' }, // Bronze
+            { main: ['#778899', '#4A5D6E'], highlight: '#AABBDD', shadow: '#2F4050' }  // Steel
+        ];
 
-        // Glow
-        this.ctx.shadowColor = baseColor;
-        this.ctx.shadowBlur = 15;
+        const theme = colors[rank - 1] || colors[3];
 
-        // Badge Circle
+        this.ctx.save();
+        this.ctx.translate(x, y);
+
+        // Gentle pulse
+        const pulse = 1 + Math.sin(this.pulsePhase * 2.5) * 0.03;
+        this.ctx.scale(pulse, pulse);
+
+        // Shadow
+        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowOffsetY = 4;
+
+        // --- Hexagon Shape ---
         this.ctx.beginPath();
-        this.ctx.arc(x, y, 18, 0, Math.PI * 2);
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 6; // Rotate to point up
+            const px = Math.cos(angle) * radius;
+            const py = Math.sin(angle) * radius;
+            if (i === 0) this.ctx.moveTo(px, py);
+            else this.ctx.lineTo(px, py);
+        }
+        this.ctx.closePath();
 
-        const gradient = this.ctx.createLinearGradient(x - 10, y - 10, x + 10, y + 10);
-        gradient.addColorStop(0, '#FFFFFF');
-        gradient.addColorStop(0.3, baseColor);
-        gradient.addColorStop(1, darkColor);
-
+        // Metallic Gradient Fill
+        const gradient = this.ctx.createLinearGradient(-radius, -radius, radius, radius);
+        gradient.addColorStop(0, theme.main[0]);
+        gradient.addColorStop(0.5, theme.main[1]);
+        gradient.addColorStop(1, theme.main[0]);
         this.ctx.fillStyle = gradient;
         this.ctx.fill();
 
-        // Border
-        this.ctx.strokeStyle = '#FFFFFF';
-        this.ctx.lineWidth = 2;
+        // Inner Bevel (Highlight top-left, Shadow bottom-right)
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowBlur = 0; // Reset shadow for stroke
+        this.ctx.shadowOffsetY = 0;
+
+        // Inner inset path
+        const inset = 4;
+        this.ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 6;
+            const px = Math.cos(angle) * (radius - inset);
+            const py = Math.sin(angle) * (radius - inset);
+            if (i === 0) this.ctx.moveTo(px, py);
+            else this.ctx.lineTo(px, py);
+        }
+        this.ctx.closePath();
+
+        // Stroke with gradient for bevel
+        const bevelGrad = this.ctx.createLinearGradient(-radius, -radius, radius, radius);
+        bevelGrad.addColorStop(0, theme.highlight);
+        bevelGrad.addColorStop(1, theme.shadow);
+        this.ctx.strokeStyle = bevelGrad;
         this.ctx.stroke();
 
-        this.ctx.shadowBlur = 0;
+        // --- Rank Typography ---
+        this.ctx.fillStyle = '#FFFFFF';
+        // Add a subtle text shadow for readability
+        this.ctx.shadowColor = theme.shadow;
+        this.ctx.shadowBlur = 2;
+        this.ctx.shadowOffsetX = 1;
+        this.ctx.shadowOffsetY = 1;
 
-        // Rank Number
-        this.ctx.fillStyle = '#000000';
+        // Large Number
+        this.ctx.font = `800 ${size * 0.45}px "Outfit", sans-serif`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.font = 'bold 20px "Segoe UI", sans-serif';
-        this.ctx.fillText(rank.toString(), x, y + 1);
+        this.ctx.fillText(rank.toString(), 0, -size * 0.05);
+
+        // Suffix
+        const suffix = rank === 1 ? 'ST' : rank === 2 ? 'ND' : rank === 3 ? 'RD' : 'TH';
+        this.ctx.font = `600 ${size * 0.15}px "Outfit", sans-serif`;
+        this.ctx.fillText(suffix, 0, size * 0.25);
+
+        // --- Decorative Star (for 1st place only) ---
+        if (rank === 1) {
+            this.ctx.shadowColor = 'transparent';
+            this.ctx.fillStyle = '#FFFFFF';
+            this.drawStar(0, -size * 0.55, 5, size * 0.12, size * 0.06);
+        }
+
+        this.ctx.restore();
+    }
+
+    /**
+     * Helper to draw a star
+     */
+    private drawStar(cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number): void {
+        let rot = Math.PI / 2 * 3;
+        let x = cx;
+        let y = cy;
+        const step = Math.PI / spikes;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy - outerRadius);
+        for (let i = 0; i < spikes; i++) {
+            x = cx + Math.cos(rot) * outerRadius;
+            y = cy + Math.sin(rot) * outerRadius;
+            this.ctx.lineTo(x, y);
+            rot += step;
+
+            x = cx + Math.cos(rot) * innerRadius;
+            y = cy + Math.sin(rot) * innerRadius;
+            this.ctx.lineTo(x, y);
+            rot += step;
+        }
+        this.ctx.lineTo(cx, cy - outerRadius);
+        this.ctx.closePath();
+        this.ctx.fill();
     }
 
     /**
      * Draw player indicators in corners
      */
+    /**
+     * Draw player indicators in corners
+     */
     private drawPlayerIndicators(): void {
         const playerCount = this.gameState.getPlayerCount();
-        const indicatorSize = 50;
-        const margin = 15;
+        const indicatorSize = this.size * 0.12; // 12% of board size
+        const margin = this.size * 0.025; // 2.5% margin
         const currentPlayer = this.gameState.getCurrentPlayer();
 
         // Corner positions
@@ -310,32 +428,29 @@ export class HUD {
             const cy = pos.y + indicatorSize / 2;
 
             // Draw indicator - brighter for current player, very dim for others
+            this.ctx.beginPath();
+            this.ctx.arc(cx, cy, indicatorSize / 2, 0, Math.PI * 2);
+
             if (isCurrentPlayer) {
                 // Current player: bright background and pulsing ring
-                this.ctx.beginPath();
-                this.ctx.arc(cx, cy, indicatorSize / 2, 0, Math.PI * 2);
                 this.ctx.fillStyle = colors.bg;
                 this.ctx.fill();
                 this.ctx.strokeStyle = colors.primary;
-                this.ctx.lineWidth = 3;
+                this.ctx.lineWidth = this.size * 0.006; // Scale line width
                 this.ctx.stroke();
-
-
             } else {
-                // Non-current player: very dim, barely visible
+                // Non-current player: very dim
                 this.ctx.globalAlpha = 0.4;
-                this.ctx.beginPath();
-                this.ctx.arc(cx, cy, indicatorSize / 2, 0, Math.PI * 2);
                 this.ctx.fillStyle = colors.bg;
                 this.ctx.fill();
                 this.ctx.strokeStyle = colors.dark;
-                this.ctx.lineWidth = 1;
+                this.ctx.lineWidth = this.size * 0.002;
                 this.ctx.stroke();
                 this.ctx.globalAlpha = 1.0;
             }
 
-            // Player icon (pawn) - always visible
-            this.drawPawnIcon(cx, cy, 15, isCurrentPlayer ? colors.primary : colors.dark);
+            // Player icon (pawn) - scale relative to indicator
+            this.drawPawnIcon(cx, cy, indicatorSize * 0.35, isCurrentPlayer ? colors.primary : colors.dark);
         }
     }
 

@@ -375,48 +375,51 @@ export class TokenRenderer2D {
 
         switch (count) {
             case 1:
-                tokenScale = 0.7;  // Nearly normal size for single token
+                tokenScale = 0.6;
                 spacing = 0;
                 break;
             case 2:
-                tokenScale = 0.55;
-                spacing = 12;
+                tokenScale = 0.5;
+                spacing = cellSize * 0.55;
                 break;
             case 3:
                 tokenScale = 0.45;
-                spacing = 10;
+                spacing = cellSize * 0.5;
                 break;
             case 4:
             default:
-                tokenScale = 0.35; // Smallest to fit all 4
-                spacing = 8;
+                tokenScale = 0.4;
+                spacing = cellSize * 0.4;
                 break;
         }
 
         // Calculate line start position based on player's triangle
+        // Push them further out to avoid dice, but keep inside triangle (1.5)
+        const centerOffset = cellSize * 1.2;
+
         let baseX = center;
         let baseY = center;
         let isHorizontal = false;
 
         switch (playerIndex) {
             case 0: // Red - left triangle, tokens in vertical line
-                baseX = center - cellSize * 1.2;
+                baseX = center - centerOffset;
                 baseY = center - ((count - 1) * spacing) / 2;
                 isHorizontal = false;
                 break;
             case 1: // Green - top triangle, tokens in horizontal line
                 baseX = center - ((count - 1) * spacing) / 2;
-                baseY = center - cellSize * 1.2;
+                baseY = center - centerOffset;
                 isHorizontal = true;
                 break;
             case 2: // Yellow - right triangle, tokens in vertical line
-                baseX = center + cellSize * 1.2;
+                baseX = center + centerOffset;
                 baseY = center - ((count - 1) * spacing) / 2;
                 isHorizontal = false;
                 break;
             case 3: // Blue - bottom triangle, tokens in horizontal line
                 baseX = center - ((count - 1) * spacing) / 2;
-                baseY = center + cellSize * 1.2;
+                baseY = center + centerOffset;
                 isHorizontal = true;
                 break;
         }
@@ -455,30 +458,31 @@ export class TokenRenderer2D {
         let spacing: number;
         switch (totalAfterThis) {
             case 1: spacing = 0; break;
-            case 2: spacing = 12; break;
-            case 3: spacing = 10; break;
-            default: spacing = 8; break;
+            case 2: spacing = cellSize * 0.35; break;
+            case 3: spacing = cellSize * 0.3; break;
+            default: spacing = cellSize * 0.25; break;
         }
 
+        const centerOffset = cellSize * 1.5;
         let baseX = center;
         let baseY = center;
 
         switch (playerIndex) {
             case 0: // Red - left, vertical line
-                baseX = center - cellSize * 1.2;
+                baseX = center - centerOffset;
                 baseY = center - ((totalAfterThis - 1) * spacing) / 2 + index * spacing;
                 break;
             case 1: // Green - top, horizontal line
                 baseX = center - ((totalAfterThis - 1) * spacing) / 2 + index * spacing;
-                baseY = center - cellSize * 1.2;
+                baseY = center - centerOffset;
                 break;
             case 2: // Yellow - right, vertical line
-                baseX = center + cellSize * 1.2;
+                baseX = center + centerOffset;
                 baseY = center - ((totalAfterThis - 1) * spacing) / 2 + index * spacing;
                 break;
             case 3: // Blue - bottom, horizontal line
                 baseX = center - ((totalAfterThis - 1) * spacing) / 2 + index * spacing;
-                baseY = center + cellSize * 1.2;
+                baseY = center + centerOffset;
                 break;
         }
 

@@ -10,29 +10,35 @@ export class DebugPanel {
     private diceLogic: DiceLogic;
     private buttons: HTMLButtonElement[] = [];
 
-    constructor(diceLogic: DiceLogic) {
+    constructor(diceLogic: DiceLogic, container: HTMLElement) {
         this.diceLogic = diceLogic;
+
+        // Create within the game container so it stays with the board
         this.container = document.createElement('div');
         this.setupUI();
-        document.body.appendChild(this.container);
+        container.appendChild(this.container);
     }
 
     private setupUI(): void {
-        // Container style
+        // Container style - Absolute relative to the game board container
         Object.assign(this.container.style, {
             position: 'absolute',
-            top: '70px', // Below turn banner area
-            right: '20px',
-            background: 'rgba(0, 0, 0, 0.8)',
-            padding: '10px',
-            borderRadius: '8px',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            zIndex: '10000', // Ensure above everything
+            top: '5%', // Relative % position
+            right: '2%',
+            background: 'rgba(0, 0, 0, 0.85)',
+            padding: '8px',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            zIndex: '100', // Above board canvases
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '6px',
             pointerEvents: 'auto',
-            fontFamily: 'system-ui, sans-serif',
+            fontFamily: '"Outfit", sans-serif',
+            backdropFilter: 'blur(5px)',
+            transformOrigin: 'top right',
+            transform: 'scale(0.8)', // Default slightly smaller
+            maxWidth: '200px',
         });
 
         // Label

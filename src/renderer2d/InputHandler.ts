@@ -94,7 +94,18 @@ export class InputHandler {
             this.isInputLocked = true;
         });
 
+        // Fix: Dice3D emits DICE_ANIMATION_COMPLETE, not ANIMATION_COMPLETE
+        eventBus.on('DICE_ANIMATION_COMPLETE', () => {
+            this.isInputLocked = false;
+        });
+
+        // Also listen for generic ANIMATION_COMPLETE in case other components use it
         eventBus.on('ANIMATION_COMPLETE', () => {
+            this.isInputLocked = false;
+        });
+
+        // Safety: Always unlock input when turn changes
+        eventBus.on('TURN_CHANGED', () => {
             this.isInputLocked = false;
         });
 

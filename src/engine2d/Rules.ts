@@ -194,14 +194,7 @@ export class Rules {
         return (totalSteps / maxSteps) * 100;
     }
 
-    /**
-     * Check if player must bust (three sixes in a row)
-     * The last moved token goes back home
-     */
-    handleBust(_playerIndex: number, lastMovedTokenId: string): void {
-        // Send the last moved token back home
-        this.tokenModel.captureToken(lastMovedTokenId);
-    }
+
 }
 
 export default Rules;

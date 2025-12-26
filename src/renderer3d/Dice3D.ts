@@ -30,11 +30,15 @@ export class Dice3D {
     private timeline: gsap.core.Timeline | null = null;
 
     private basePosition: THREE.Vector3;
-    private baseScale: number = 40;
+    private baseScale: number;
 
     constructor(threeScene: ThreeScene) {
         this.threeScene = threeScene;
-        this.basePosition = new THREE.Vector3(0, 20, 0);
+        const boardSize = threeScene.getSize();
+
+        // Calculate scale relative to board (approx 1/15th of board, like a cell)
+        this.baseScale = boardSize / 15;
+        this.basePosition = new THREE.Vector3(0, boardSize * 0.033, 0); // Y pos relative to size
 
         this.dice = new THREE.Group();
         this.diceMesh = this.createDiceMesh();
@@ -47,6 +51,37 @@ export class Dice3D {
 
         threeScene.add(this.dice);
         this.setupEventListeners();
+    }
+
+    /**
+     * Resize dice based on new board size
+     */
+    resize(newSize: number): void {
+        // Dispose old meshes
+        this.diceMesh.geometry.dispose();
+        (this.diceMesh.material as THREE.Material).dispose();
+        this.dice.remove(this.diceMesh);
+
+        this.dotMeshes.forEach(dot => {
+            dot.geometry.dispose();
+            (dot.material as THREE.Material).dispose();
+            this.dice.remove(dot);
+        });
+        this.dotMeshes = [];
+
+        // Update metrics
+        this.baseScale = newSize / 15;
+        this.basePosition.set(0, newSize * 0.033, 0);
+
+        // Recreate meshes
+        this.diceMesh = this.createDiceMesh();
+        this.dice.add(this.diceMesh);
+        this.createDots();
+
+        // Reset position unless rolling
+        if (!this.isRolling) {
+            this.dice.position.copy(this.basePosition);
+        }
     }
 
     /**
@@ -129,7 +164,7 @@ export class Dice3D {
         // Face is at halfSize. Target outer surface at halfSize + 0.1
         // center + radius * scale = halfSize + 0.1
         // center = halfSize + 0.1 - radius * scale
-        const surfaceOffset = 0.4;
+        const surfaceOffset = this.baseScale * 0.01; // RELATIVE OFFSET
         const dotCenterOffset = halfSize + surfaceOffset - (dotRadius * flatteningScale);
 
         // Spread of dots
@@ -181,7 +216,7 @@ export class Dice3D {
 
                 // Scale to flatten against the face normal
                 // We determine face by which coord is near the surface limit
-                const limit = halfSize - 5; // buffer (using halfSize instead of dotCenterOffset for safer check)
+                const limit = halfSize - (this.baseScale * 0.125); // Relative buffer
                 if (Math.abs(pos.x) > limit) dot.scale.set(flatteningScale, 1, 1);
                 else if (Math.abs(pos.y) > limit) dot.scale.set(1, flatteningScale, 1);
                 else if (Math.abs(pos.z) > limit) dot.scale.set(1, 1, flatteningScale);
@@ -217,6 +252,9 @@ export class Dice3D {
      * Start pulsing animation (indicate waiting for roll)
      */
     private startPulse(): void {
+        // If rolling, don't pulse
+        if (this.isRolling) return;
+
         // Ensure visible
         this.dice.visible = true;
 
@@ -230,10 +268,10 @@ export class Dice3D {
 
         // Pulse scale
         this.pulseTween = gsap.to(this.dice.scale, {
-            x: 1.3,
-            y: 1.3,
-            z: 1.3,
-            duration: 0.6,
+            x: 1.15,
+            y: 1.15,
+            z: 1.15,
+            duration: 0.8, // Slightly slower for elegance
             yoyo: true,
             repeat: -1,
             ease: 'sine.inOut'
