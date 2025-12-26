@@ -221,6 +221,13 @@ class LudoGame {
                 await this.executeBotTurn(player);
             }
         });
+
+        // Listen for game resume to continue bot turns if paused mid-turn
+        eventBus.on('GAME_RESUMED', async ({ player }) => {
+            if (this.gameState.isBot(player)) {
+                await this.executeBotTurn(player);
+            }
+        });
     }
 
     /**

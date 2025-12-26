@@ -131,6 +131,7 @@ export class GameState {
     resume(): void {
         if (this.phase === 'paused') {
             this.phase = 'playing';
+            eventBus.emit('GAME_RESUMED', { player: this.getCurrentPlayer() });
         }
     }
 
@@ -154,6 +155,10 @@ export class GameState {
 
     getPlayerCount(): number {
         return this.playerCount;
+    }
+
+    getDiceLogic(): DiceLogic {
+        return this.diceLogic;
     }
 
     getPlayerNames(): string[] {

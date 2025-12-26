@@ -42,6 +42,10 @@
     z-index: 100;
     pointer-events: none;
     font-family: 'Outfit', -apple-system, sans-serif;
+    /* Safe area for mobile status bars - 32px fallback for Android */
+    padding-top: max(32px, env(safe-area-inset-top, 32px));
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    box-sizing: border-box;
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -456,6 +460,123 @@
     transform: translateY(0);
 }
 
+#in-game-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: 99999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+#in-game-menu.hidden {
+    display: none;
+    opacity: 0;
+}
+
+#in-game-menu .menu-content {
+    background: rgba(18, 18, 30, 0.95);
+    padding: clamp(2rem, 5vw, 3rem);
+    border-radius: 24px;
+    border: 2px solid rgba(79, 112, 154, 0.2);
+    box-shadow:
+        0 0 50px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    width: min(90%, 360px);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    animation: menu-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#in-game-menu h3 {
+    color: var(--neon-gold);
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 0;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+#in-game-menu .menu-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+#in-game-menu button {
+    width: 100%;
+    padding: 16px;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Specific Button Overrides for Menu */
+#in-game-menu #btn-resume {
+    background: var(--neon-gold);
+    color: var(--deep);
+    border: none;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+#in-game-menu #btn-resume:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
+#in-game-menu #btn-restart {
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+    background: rgba(0, 247, 255, 0.1);
+}
+
+#in-game-menu #btn-restart:hover {
+    background: transparent;
+    border: 1px solid var(--text-dim);
+    color: var(--text);
+}
+
+#in-game-menu #btn-quit {
+    background: transparent;
+    border: 1px solid var(--p-red);
+    color: var(--p-red);
+    margin-top: 0.5rem;
+}
+
+#in-game-menu #btn-quit:hover {
+    background: var(--p-red);
+    color: white;
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+}
+
+@keyframes menu-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 .type-btn {
     flex: 1;
     background: transparent;
@@ -640,7 +761,8 @@
 
 .game-header {
     position: absolute;
-    top: 0;
+    top: 32px;
+    /* Offset for mobile status bar */
     left: 0;
     right: 0;
     display: flex;
@@ -754,12 +876,14 @@
 /* Avatar Positions - Adapted for sci-fi frame background */
 /* Positions adjusted to sit inside the decorative frame corners */
 .p-avatar-0 {
-    top: 12%;
+    top: calc(12% + 32px);
+    /* Extra offset for status bar */
     left: 5%;
 }
 
 .p-avatar-1 {
-    top: 12%;
+    top: calc(12% + 32px);
+    /* Extra offset for status bar */
     right: 5%;
     flex-direction: row-reverse;
     padding: 8px 8px 8px 14px;
@@ -782,6 +906,9 @@
    ───────────────────────────────────────────────────────────────────── */
 #game-container {
     transition: filter 0.5s ease, opacity 0.5s ease;
+    /* Push board down to avoid overlap with status bar and avatars */
+    padding-top: 60px;
+    box-sizing: border-box;
 }
 
 /* ─────────────────────────────────────────────────────────────────────

@@ -16,6 +16,9 @@ interface DebugAPI {
     makeWinner: (playerIndex: number) => void;
     enterBoard: (tokenId: string) => void;
     setDice: (value: number) => void;
+    roll: (value: number) => void;  // Alias for setDice
+    on: () => void;
+    off: () => void;
     info: () => void;
 }
 
@@ -194,8 +197,27 @@ Examples:
                 return;
             }
 
-            // This would require exposing dice internals - simplified version
-            console.log(`%c🎲 Dice value set to ${value} (Note: This affects next roll display only)`, 'color: #FFFF00;');
+            // Use the actual DiceLogic debug method
+            gameState.getDiceLogic().debugSetNextRoll(value);
+            console.log(`%c🎲 Next dice roll will be: ${value}`, 'color: #FFFF00; font-weight: bold;');
+        },
+
+        roll: (value: number) => {
+            // Alias for setDice
+            debug.setDice(value);
+        },
+
+        on: () => {
+            (window as any).__debugMode = true;
+            console.log('%c🐛 Debug Mode: ON', 'color: #00FF99; font-size: 14px; font-weight: bold;');
+            console.log('  • Forced dice: debug.roll(1-6)');
+            console.log('  • Type debug.help() for all commands');
+        },
+
+        off: () => {
+            (window as any).__debugMode = false;
+            (window as any).__forcedDice = null;
+            console.log('%c🐛 Debug Mode: OFF', 'color: #FF6666; font-size: 14px; font-weight: bold;');
         }
     };
 

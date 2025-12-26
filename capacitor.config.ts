@@ -8,22 +8,22 @@ const config: CapacitorConfig = {
         androidScheme: 'https',
     },
     android: {
-        backgroundColor: '#F5ECD7',
+        backgroundColor: '#0a0a12',
         allowMixedContent: true,
     },
     ios: {
-        backgroundColor: '#F5ECD7',
+        backgroundColor: '#0a0a12',
     },
     plugins: {
         SplashScreen: {
             launchAutoHide: true,
             launchShowDuration: 2000,
-            backgroundColor: '#F5ECD7',
+            backgroundColor: '#0a0a12',
             showSpinner: false,
         },
         StatusBar: {
             style: 'Dark',
-            backgroundColor: '#F5ECD7',
+            backgroundColor: '#0a0a12',
         },
     },
 };

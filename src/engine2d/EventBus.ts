@@ -28,6 +28,7 @@ export interface GameEventMap {
     GAME_STARTED: { playerCount: number };
     GAME_WON: { player: number };
     GAME_RESET: {};
+    GAME_RESUMED: { player: number };
 
     // UI events
     HIGHLIGHT_MOVES: { tokenId: string; validPositions: number[] };

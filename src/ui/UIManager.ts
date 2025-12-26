@@ -20,8 +20,10 @@ export class UIManager {
     // Components
     private avatarContainer: HTMLElement;
     private playerInputs: HTMLElement;
+    private menuModal: HTMLElement;
 
     // Config State
+    private lastGameConfig: GameConfig | null = null;
     private config: GameConfig = {
         playerCount: 2,
         activePlayerIndices: [0, 2], // Default R+Y
@@ -39,7 +41,9 @@ export class UIManager {
         this.gameUIOverlay = document.getElementById('game-ui-overlay')!;
         this.gameContainer = document.getElementById('game-container')!;
         this.avatarContainer = document.getElementById('avatar-container')!;
+
         this.playerInputs = document.querySelector('.player-config')!;
+        this.menuModal = document.getElementById('in-game-menu')!;
 
         this.setupEventListeners();
 
@@ -55,6 +59,37 @@ export class UIManager {
 
         // Setup Back -> Start
         document.getElementById('btn-back')?.addEventListener('click', () => {
+            this.showScreen(this.startScreen);
+        });
+
+        // Menu Button
+        document.getElementById('btn-menu')?.addEventListener('click', () => {
+            const modal = document.getElementById('in-game-menu');
+            if (modal) modal.classList.remove('hidden');
+            this.gameState.pause(); // Pause the game when menu opens
+        });
+
+        // Menu Options
+        document.getElementById('btn-resume')?.addEventListener('click', () => {
+            const modal = document.getElementById('in-game-menu');
+            if (modal) modal.classList.add('hidden');
+            this.gameState.resume(); // Resume the game
+        });
+
+        document.getElementById('btn-restart')?.addEventListener('click', () => {
+            const modal = document.getElementById('in-game-menu');
+            if (modal) modal.classList.add('hidden');
+            if (this.lastGameConfig) {
+                this.onStartGame(this.lastGameConfig);
+                // Re-create avatars
+                this.createAvatars();
+            }
+        });
+
+        document.getElementById('btn-quit')?.addEventListener('click', () => {
+            const modal = document.getElementById('in-game-menu');
+            if (modal) modal.classList.add('hidden');
+            this.gameState.reset(); // Reset game state
             this.showScreen(this.startScreen);
         });
 
@@ -123,19 +158,23 @@ export class UIManager {
             const botBtnSegmented = cell.querySelector('.type-btn.bot');
 
             const setBotState = (isBot: boolean) => {
+                const playerIndex = parseInt(cell.getAttribute('data-player') || '0');
                 if (isBot) {
                     humanBtn?.classList.remove('active');
                     botBtnSegmented?.classList.add('active');
                     if (input) {
-                        // input.value = 'Bot'; // Optional: auto-rename
+                        input.value = `Bot ${playerIndex + 1}`;
                         input.disabled = true;
                     }
+                    if (editIcon) editIcon.style.display = 'none';
                 } else {
                     humanBtn?.classList.add('active');
                     botBtnSegmented?.classList.remove('active');
                     if (input && cell.classList.contains('selected')) {
+                        input.value = `Player ${playerIndex + 1}`;
                         input.disabled = false;
                     }
+                    if (editIcon) editIcon.style.display = '';
                 }
             };
 
@@ -196,6 +235,9 @@ export class UIManager {
                 botStatus: botStatus
             };
 
+
+
+            this.lastGameConfig = config; // Save for restart
             this.onStartGame(config);
             this.showScreen(this.gameUIOverlay);
             this.gameContainer.style.filter = 'none'; // Unblur
