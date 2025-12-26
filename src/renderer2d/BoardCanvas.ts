@@ -53,6 +53,7 @@ export class BoardCanvas {
         this.drawHomeBases(ctx); // Draw bases ON TOP to cover grid overlap
         this.drawHomeStretches(ctx);
         this.drawCenterHome(ctx);
+        this.drawEntryArrows(ctx); // Draw entry point arrows
     }
 
     private drawBackground(ctx: CanvasRenderingContext2D): void {
@@ -399,6 +400,48 @@ export class BoardCanvas {
         ctx.shadowBlur = 10;
         this.drawStar(ctx, cx, cy, centerSize * 0.25, 4, 0.4, '#FFFFFF');
         ctx.shadowBlur = 0;
+    }
+
+    /**
+     * Draw small arrows at player entry points
+     * Arrows point in the direction of movement
+     */
+    private drawEntryArrows(ctx: CanvasRenderingContext2D): void {
+        const cs = this.cellSize;
+        const offset = this.gridOffset;
+        const arrowSize = cs * 0.2; // Smaller arrows
+
+        // Entry point positions and directions for each player
+        // Position 51 - the last cell before entering home stretch
+        const entryPoints: { row: number; col: number; dir: number; color: string }[] = [
+            { row: 0, col: 7, dir: 1, color: COLORS.players.green.primary },     // Green: top arm, about to enter home stretch down
+            { row: 7, col: 14, dir: 2, color: COLORS.players.yellow.primary },  // Yellow: right arm, about to enter home stretch left
+            { row: 14, col: 7, dir: 3, color: COLORS.players.blue.primary }, // Blue: bottom arm, about to enter home stretch up
+            { row: 7, col: 0, dir: 0, color: COLORS.players.red.primary },    // Red: left arm, about to enter home stretch right
+        ];
+
+        entryPoints.forEach(({ row, col, dir, color }) => {
+            const x = offset + col * cs + cs / 2;
+            const y = offset + row * cs + cs / 2;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate((dir * Math.PI) / 2); // Rotate based on direction
+
+            // Draw arrow pointing right (will be rotated)
+            ctx.beginPath();
+            ctx.moveTo(arrowSize * 0.6, 0);           // Tip
+            ctx.lineTo(-arrowSize * 0.4, -arrowSize * 0.5);  // Top back
+            ctx.lineTo(-arrowSize * 0.1, 0);          // Inner notch
+            ctx.lineTo(-arrowSize * 0.4, arrowSize * 0.5);   // Bottom back
+            ctx.closePath();
+
+            // Fill only - no shadow or stroke
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            ctx.restore();
+        });
     }
 
     private drawStar(

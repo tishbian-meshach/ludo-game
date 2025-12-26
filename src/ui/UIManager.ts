@@ -93,6 +93,33 @@ export class UIManager {
             this.showScreen(this.startScreen);
         });
 
+        // Tap to Roll Button
+        const tapToRollBtn = document.getElementById('tap-to-roll');
+        if (tapToRollBtn) {
+            tapToRollBtn.addEventListener('click', async () => {
+                if (this.gameState.canRoll()) {
+                    tapToRollBtn.classList.add('hidden');
+                    await this.gameState.handleDiceClick();
+                }
+            });
+        }
+
+        // Listen for turn changes to show/hide tap-to-roll button
+        eventBus.on('TURN_CHANGED', ({ player }) => {
+            this.updateTapToRollButton(player);
+        });
+
+        // Hide button after dice is rolled
+        eventBus.on('DICE_ROLLED', () => {
+            const btn = document.getElementById('tap-to-roll');
+            if (btn) btn.classList.add('hidden');
+        });
+
+        // Show button when game resumes if it's a human player's turn
+        eventBus.on('GAME_RESUMED', ({ player }) => {
+            this.updateTapToRollButton(player);
+        });
+
         // Local state for toggles (no global config.gameMode anymore)
 
         // Setup Grid Selection & Toggles
@@ -374,5 +401,57 @@ export class UIManager {
             toast.style.animation = 'toast-out 0.3s ease-in forwards';
             setTimeout(() => toast.remove(), 300);
         }, 3000);
+    }
+
+    /**
+     * Update the tap-to-roll button visibility based on current player
+     */
+    private updateTapToRollButton(playerIndex: number): void {
+        const btn = document.getElementById('tap-to-roll');
+        if (!btn) return;
+
+        // Only show for human players when they can roll
+        const isHuman = !this.gameState.isBot(playerIndex);
+        const canRoll = this.gameState.canRoll();
+        const turnPhase = this.gameState.getTurnPhase();
+
+        if (isHuman && canRoll && turnPhase === 'waiting-for-roll') {
+            btn.classList.remove('hidden');
+
+            // Set player color
+            const colorName = PLAYER_ORDER[playerIndex];
+            const colorHex = colorName ?
+                ({ red: '#FF0055', green: '#00FF99', yellow: '#FFFF00', blue: '#00CCFF' })[colorName]
+                : '#00f7ff';
+            btn.style.setProperty('--player-color', colorHex || '#00f7ff');
+
+            // Position below the player's avatar
+            // Avatar positions: 0=top-left, 1=top-right, 2=bottom-right, 3=bottom-left
+            btn.style.removeProperty('top');
+            btn.style.removeProperty('bottom');
+            btn.style.removeProperty('left');
+            btn.style.removeProperty('right');
+
+            switch (playerIndex) {
+                case 0: // Top-left
+                    btn.style.top = 'calc(12% + 32px + 70px)';
+                    btn.style.left = '5%';
+                    break;
+                case 1: // Top-right
+                    btn.style.top = 'calc(12% + 32px + 70px)';
+                    btn.style.right = '5%';
+                    break;
+                case 2: // Bottom-right
+                    btn.style.bottom = 'calc(8% + 70px)';
+                    btn.style.right = '5%';
+                    break;
+                case 3: // Bottom-left
+                    btn.style.bottom = 'calc(8% + 70px)';
+                    btn.style.left = '5%';
+                    break;
+            }
+        } else {
+            btn.classList.add('hidden');
+        }
     }
 }
